@@ -27,18 +27,35 @@ def combine_files(directory, output_file):
                         outfile.write(content)
 
 base_dir = os.path.dirname(os.path.abspath(__file__))
-client_dir = os.path.join(base_dir, 'client/src')
-server_dir = os.path.join(base_dir, 'backend')
+client_dir = os.path.join(base_dir, 'client')
+backend_dir = os.path.join(base_dir, 'backend')
+frontend_dir = os.path.join(base_dir, 'frontend')
+server_dir = os.path.join(base_dir, 'server')
 
-client_output = os.path.join(base_dir, 'client.txt')
-server_output = os.path.join(base_dir, 'server.txt')
+client_output = os.path.join(base_dir, 'output_client.txt')
+backend_output = os.path.join(base_dir, 'output_backend.txt')
+frontend_output = os.path.join(base_dir, 'output_frontend.txt')
+server_output = os.path.join(base_dir, 'output_server.txt')
+all_output = os.path.join(base_dir, 'output_all.txt')
 
 # Clear or create the output files
 open(client_output, 'w', encoding='utf-8').close()
+open(backend_output, 'w', encoding='utf-8').close()
+open(frontend_output, 'w', encoding='utf-8').close()
 open(server_output, 'w', encoding='utf-8').close()
+open(all_output, 'w', encoding='utf-8').close()
 
 # Combine client files
 combine_files(client_dir, client_output)
 
+# Combine backend files
+combine_files(backend_dir, backend_output)
+
+# Combine frontend files
+combine_files(frontend_dir, frontend_output)
+
 # Combine server files
 combine_files(server_dir, server_output)
+
+# Combine all files
+combine_files(base_dir, all_output)

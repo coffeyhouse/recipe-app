@@ -1,0 +1,1656 @@
+
+
+==================== C:\Code\recipe-app\server\database.py ====================
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+DATABASE_URL = "sqlite:///../mydatabase2.db"
+engine = create_engine(DATABASE_URL, echo=True)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+# Dependency
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+==================== C:\Code\recipe-app\server\main.py ====================
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from models import Base
+from database import engine
+from api.routes import (
+    ingredients_router,
+    recipes_router,
+    users_router,
+    ingredient_categories_router,
+    ingredient_sub_categories_router,
+    recipe_authors_router,
+    recipe_books_router,
+    recipe_ingredients_router,
+    units_router,
+    meal_plans_router,
+    meal_plan_recipes_router,
+    shopping_lists_router,
+    shopping_list_ingredients_router,  # Add these lines
+)
+
+# Create the tables
+Base.metadata.create_all(bind=engine)
+
+# FastAPI instance
+app = FastAPI()
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
+
+# Include API routes
+app.include_router(ingredients_router)
+app.include_router(recipes_router)
+app.include_router(users_router)
+app.include_router(ingredient_categories_router)
+app.include_router(ingredient_sub_categories_router)
+app.include_router(recipe_authors_router)
+app.include_router(recipe_books_router)
+app.include_router(recipe_ingredients_router)
+app.include_router(units_router)
+app.include_router(meal_plans_router)
+app.include_router(meal_plan_recipes_router)
+app.include_router(shopping_lists_router)  # Add this line
+app.include_router(shopping_list_ingredients_router)  # Add this line
+
+@app.get("/")
+def read_root():
+    return {"Hello": "World"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000, reload=True)
+
+
+==================== C:\Code\recipe-app\server\api\__init__.py ====================
+
+
+
+==================== C:\Code\recipe-app\server\api\routes\ingredients.py ====================
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from database import get_db
+from models import Ingredient as IngredientModel
+from schemas.ingredient import Ingredient as IngredientSchema, IngredientCreate, IngredientUpdate
+from typing import List
+from datetime import datetime
+
+router = APIRouter(prefix="/api/ingredients")
+
+@router.get("/", response_model=List[IngredientSchema])
+def read_ingredients(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    ingredients = db.query(IngredientModel).offset(skip).limit(limit).all()
+    return ingredients
+
+@router.post("/", response_model=IngredientSchema, status_code=status.HTTP_201_CREATED)
+def create_ingredient(ingredient: IngredientCreate, db: Session = Depends(get_db)):
+    db_ingredient = IngredientModel(
+        IngredientName=ingredient.IngredientName,
+        PurchaseWeightVolume=ingredient.PurchaseWeightVolume,
+        PurchaseUnitID=ingredient.PurchaseUnitID,
+        SubCategoryID=ingredient.SubCategoryID,
+        PurchaseWeightUnitID=ingredient.PurchaseWeightUnitID,
+        CreatedAt=datetime.utcnow(),
+        UpdatedAt=datetime.utcnow(),
+    )
+    db.add(db_ingredient)
+    db.commit()
+    db.refresh(db_ingredient)
+    return db_ingredient
+
+@router.put("/{ingredient_id}", response_model=IngredientSchema)
+def update_ingredient(ingredient_id: int, ingredient: IngredientUpdate, db: Session = Depends(get_db)):
+    db_ingredient = db.query(IngredientModel).filter(IngredientModel.IngredientID == ingredient_id).first()
+    if db_ingredient is None:
+        raise HTTPException(status_code=404, detail="Ingredient not found")
+    for key, value in ingredient.dict().items():
+        setattr(db_ingredient, key, value)
+    db_ingredient.UpdatedAt = datetime.utcnow()
+    db.commit()
+    db.refresh(db_ingredient)
+    return db_ingredient
+
+@router.delete("/{ingredient_id}", response_model=IngredientSchema)
+def delete_ingredient(ingredient_id: int, db: Session = Depends(get_db)):
+    db_ingredient = db.query(IngredientModel).filter(IngredientModel.IngredientID == ingredient_id).first()
+    if db_ingredient is None:
+        raise HTTPException(status_code=404, detail="Ingredient not found")
+    db.delete(db_ingredient)
+    db.commit()
+    return db_ingredient
+
+
+==================== C:\Code\recipe-app\server\api\routes\ingredient_categories.py ====================
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from database import get_db
+from models import IngredientCategory as IngredientCategoryModel
+from schemas.ingredient_category import IngredientCategory, IngredientCategoryCreate, IngredientCategoryUpdate
+from typing import List
+from datetime import datetime
+
+router = APIRouter(prefix="/api/ingredient-categories")
+
+@router.get("/", response_model=List[IngredientCategory])
+def read_ingredient_categories(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    ingredient_categories = db.query(IngredientCategoryModel).offset(skip).limit(limit).all()
+    return ingredient_categories
+
+@router.post("/", response_model=IngredientCategory, status_code=status.HTTP_201_CREATED)
+def create_ingredient_category(ingredient_category: IngredientCategoryCreate, db: Session = Depends(get_db)):
+    db_ingredient_category = IngredientCategoryModel(
+        CategoryName=ingredient_category.CategoryName,
+        CreatedAt=datetime.utcnow(),
+        UpdatedAt=datetime.utcnow(),
+    )
+    try:
+        db.add(db_ingredient_category)
+        db.commit()
+        db.refresh(db_ingredient_category)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Category name already exists.")
+    return db_ingredient_category
+
+@router.put("/{category_id}", response_model=IngredientCategory)
+def update_ingredient_category(category_id: int, ingredient_category: IngredientCategoryUpdate, db: Session = Depends(get_db)):
+    db_ingredient_category = db.query(IngredientCategoryModel).filter(IngredientCategoryModel.CategoryID == category_id).first()
+    if db_ingredient_category is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ingredient category not found")
+    for key, value in ingredient_category.dict().items():
+        setattr(db_ingredient_category, key, value)
+    db_ingredient_category.UpdatedAt = datetime.utcnow()
+    try:
+        db.commit()
+        db.refresh(db_ingredient_category)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Category name already exists.")
+    return db_ingredient_category
+
+@router.delete("/{category_id}", response_model=IngredientCategory)
+def delete_ingredient_category(category_id: int, db: Session = Depends(get_db)):
+    db_ingredient_category = db.query(IngredientCategoryModel).filter(IngredientCategoryModel.CategoryID == category_id).first()
+    if db_ingredient_category is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ingredient category not found")
+    db.delete(db_ingredient_category)
+    db.commit()
+    return db_ingredient_category
+
+
+==================== C:\Code\recipe-app\server\api\routes\ingredient_sub_categories.py ====================
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from typing import List
+from database import get_db
+from models import IngredientSubCategory as IngredientSubCategoryModel
+from schemas.ingredient_sub_category import (
+    IngredientSubCategory,
+    IngredientSubCategoryCreate,
+    IngredientSubCategoryUpdate
+)
+from datetime import datetime
+
+router = APIRouter(prefix="/api/ingredient-sub-categories")
+
+@router.get("/", response_model=List[IngredientSubCategory])
+def read_ingredient_sub_categories(skip: int = 0, limit: int = 1000, db: Session = Depends(get_db)):
+    ingredient_sub_categories = db.query(IngredientSubCategoryModel).offset(skip).limit(limit).all()
+    return ingredient_sub_categories
+
+@router.get("/{sub_category_id}", response_model=IngredientSubCategory)
+def read_ingredient_sub_category(sub_category_id: int, db: Session = Depends(get_db)):
+    db_ingredient_sub_category = db.query(IngredientSubCategoryModel).filter(IngredientSubCategoryModel.SubCategoryID == sub_category_id).first()
+    if not db_ingredient_sub_category:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ingredient sub-category not found")
+    return db_ingredient_sub_category
+
+@router.get("/category/{category_id}", response_model=List[IngredientSubCategory])
+def read_ingredient_sub_categories_by_category(category_id: int, skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    ingredient_sub_categories = db.query(IngredientSubCategoryModel).filter(IngredientSubCategoryModel.CategoryID == category_id).offset(skip).limit(limit).all()
+    return ingredient_sub_categories
+
+@router.post("/", response_model=IngredientSubCategory, status_code=status.HTTP_201_CREATED)
+def create_ingredient_sub_category(ingredient_sub_category: IngredientSubCategoryCreate, db: Session = Depends(get_db)):
+    db_ingredient_sub_category = IngredientSubCategoryModel(
+        SubCategoryName=ingredient_sub_category.SubCategoryName,
+        CategoryID=ingredient_sub_category.CategoryID,
+        CreatedAt=datetime.utcnow(),
+        UpdatedAt=datetime.utcnow(),
+    )
+    db.add(db_ingredient_sub_category)
+    db.commit()
+    db.refresh(db_ingredient_sub_category)
+    return db_ingredient_sub_category
+
+@router.put("/{sub_category_id}", response_model=IngredientSubCategory)
+def update_ingredient_sub_category(sub_category_id: int, ingredient_sub_category: IngredientSubCategoryUpdate, db: Session = Depends(get_db)):
+    db_ingredient_sub_category = db.query(IngredientSubCategoryModel).filter(IngredientSubCategoryModel.SubCategoryID == sub_category_id).first()
+    if not db_ingredient_sub_category:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ingredient sub-category not found")
+    
+    for key, value in ingredient_sub_category.dict().items():
+        setattr(db_ingredient_sub_category, key, value)
+    db_ingredient_sub_category.UpdatedAt = datetime.utcnow()
+    db.commit()
+    db.refresh(db_ingredient_sub_category)
+    return db_ingredient_sub_category
+
+@router.delete("/{sub_category_id}", response_model=IngredientSubCategory)
+def delete_ingredient_sub_category(sub_category_id: int, db: Session = Depends(get_db)):
+    db_ingredient_sub_category = db.query(IngredientSubCategoryModel).filter(IngredientSubCategoryModel.SubCategoryID == sub_category_id).first()
+    if not db_ingredient_sub_category:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ingredient sub-category not found")
+    
+    db.delete(db_ingredient_sub_category)
+    db.commit()
+    return db_ingredient_sub_category
+
+
+==================== C:\Code\recipe-app\server\api\routes\meal_plans.py ====================
+
+# api/routes/meal_plans.py
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from database import get_db
+from models import MealPlan as MealPlanModel
+from schemas.meal_plan import MealPlan as MealPlanSchema, MealPlanCreate, MealPlanUpdate
+from typing import List
+from datetime import datetime
+
+router = APIRouter(prefix="/api/meal-plans")
+
+@router.get("/", response_model=List[MealPlanSchema])
+def read_meal_plans(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    meal_plans = db.query(MealPlanModel).offset(skip).limit(limit).all()
+    return meal_plans
+
+@router.post("/", response_model=MealPlanSchema, status_code=status.HTTP_201_CREATED)
+def create_meal_plan(meal_plan: MealPlanCreate, db: Session = Depends(get_db)):
+    db_meal_plan = MealPlanModel(
+        UserID=meal_plan.UserID,
+        PlanName=meal_plan.PlanName,
+        StartDate=meal_plan.StartDate,
+        EndDate=meal_plan.EndDate,
+        CreatedAt=datetime.utcnow(),
+        UpdatedAt=datetime.utcnow(),
+    )
+    db.add(db_meal_plan)
+    db.commit()
+    db.refresh(db_meal_plan)
+    return db_meal_plan
+
+@router.get("/{meal_plan_id}", response_model=MealPlanSchema)
+def read_meal_plan(meal_plan_id: int, db: Session = Depends(get_db)):
+    meal_plan = db.query(MealPlanModel).filter(MealPlanModel.MealPlanID == meal_plan_id).first()
+    if meal_plan is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal plan not found")
+    return meal_plan
+
+@router.put("/{meal_plan_id}", response_model=MealPlanSchema)
+def update_meal_plan(meal_plan_id: int, meal_plan: MealPlanUpdate, db: Session = Depends(get_db)):
+    db_meal_plan = db.query(MealPlanModel).filter(MealPlanModel.MealPlanID == meal_plan_id).first()
+    if db_meal_plan is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal plan not found")
+    for key, value in meal_plan.dict().items():
+        setattr(db_meal_plan, key, value)
+    db_meal_plan.UpdatedAt = datetime.utcnow()
+    db.commit()
+    db.refresh(db_meal_plan)
+    return db_meal_plan
+
+@router.delete("/{meal_plan_id}", response_model=MealPlanSchema)
+def delete_meal_plan(meal_plan_id: int, db: Session = Depends(get_db)):
+    db_meal_plan = db.query(MealPlanModel).filter(MealPlanModel.MealPlanID == meal_plan_id).first()
+    if db_meal_plan is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal plan not found")
+    db.delete(db_meal_plan)
+    db.commit()
+    return db_meal_plan
+
+
+==================== C:\Code\recipe-app\server\api\routes\meal_plan_recipes.py ====================
+
+# api/routes/meal_plan_recipes.py
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from database import get_db
+from models import MealPlanRecipe as MealPlanRecipeModel
+from schemas.meal_plan_recipe import MealPlanRecipe as MealPlanRecipeSchema, MealPlanRecipeCreate, MealPlanRecipeUpdate
+from typing import List
+
+router = APIRouter(prefix="/api/meal-plan-recipes")
+
+@router.get("/", response_model=List[MealPlanRecipeSchema])
+def read_meal_plan_recipes(skip: int = 0, limit: int = 10000, db: Session = Depends(get_db)):
+    meal_plan_recipes = db.query(MealPlanRecipeModel).offset(skip).limit(limit).all()
+    return meal_plan_recipes
+
+@router.post("/", response_model=MealPlanRecipeSchema, status_code=status.HTTP_201_CREATED)
+def create_meal_plan_recipe(meal_plan_recipe: MealPlanRecipeCreate, db: Session = Depends(get_db)):
+    db_meal_plan_recipe = MealPlanRecipeModel(
+        MealPlanID=meal_plan_recipe.MealPlanID,
+        RecipeID=meal_plan_recipe.RecipeID,
+        MealType=meal_plan_recipe.MealType,
+        Date=meal_plan_recipe.Date,
+    )
+    db.add(db_meal_plan_recipe)
+    db.commit()
+    db.refresh(db_meal_plan_recipe)
+    return db_meal_plan_recipe
+
+@router.get("/{meal_plan_recipe_id}", response_model=MealPlanRecipeSchema)
+def read_meal_plan_recipe(meal_plan_recipe_id: int, db: Session = Depends(get_db)):
+    meal_plan_recipe = db.query(MealPlanRecipeModel).filter(MealPlanRecipeModel.MealPlanRecipeID == meal_plan_recipe_id).first()
+    if meal_plan_recipe is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal plan recipe not found")
+    return meal_plan_recipe
+
+@router.put("/{meal_plan_recipe_id}", response_model=MealPlanRecipeSchema)
+def update_meal_plan_recipe(meal_plan_recipe_id: int, meal_plan_recipe: MealPlanRecipeUpdate, db: Session = Depends(get_db)):
+    db_meal_plan_recipe = db.query(MealPlanRecipeModel).filter(MealPlanRecipeModel.MealPlanRecipeID == meal_plan_recipe_id).first()
+    if db_meal_plan_recipe is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal plan recipe not found")
+    for key, value in meal_plan_recipe.dict().items():
+        setattr(db_meal_plan_recipe, key, value)
+    db.commit()
+    db.refresh(db_meal_plan_recipe)
+    return db_meal_plan_recipe
+
+@router.delete("/{meal_plan_recipe_id}", response_model=MealPlanRecipeSchema)
+def delete_meal_plan_recipe(meal_plan_recipe_id: int, db: Session = Depends(get_db)):
+    db_meal_plan_recipe = db.query(MealPlanRecipeModel).filter(MealPlanRecipeModel.MealPlanRecipeID == meal_plan_recipe_id).first()
+    if db_meal_plan_recipe is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Meal plan recipe not found")
+    db.delete(db_meal_plan_recipe)
+    db.commit()
+    return db_meal_plan_recipe
+
+
+==================== C:\Code\recipe-app\server\api\routes\recipes.py ====================
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from database import get_db
+from models import Recipe as RecipeModel
+from schemas.recipe import Recipe as RecipeSchema, RecipeCreate
+from typing import List
+from datetime import datetime
+
+router = APIRouter(prefix="/api/recipes")
+
+@router.get("/", response_model=List[RecipeSchema])
+def read_recipes(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    recipes = db.query(RecipeModel).offset(skip).limit(limit).all()
+    return recipes
+
+@router.post("/", response_model=RecipeSchema, status_code=201)
+def create_recipe(recipe: RecipeCreate, db: Session = Depends(get_db)):
+    db_recipe = RecipeModel(
+        RecipeName=recipe.RecipeName,
+        AuthorID=recipe.AuthorID,
+        BookID=recipe.BookID,
+        PageNumber=recipe.PageNumber,
+        OnlineURL=recipe.OnlineURL,
+        CookTime=recipe.CookTime,
+        Difficulty=recipe.Difficulty,
+        Type=recipe.Type,
+        ImageURL=recipe.ImageURL,
+        Servings=recipe.Servings,
+        Cuisine=recipe.Cuisine,
+        CreatedAt=datetime.utcnow(),
+        UpdatedAt=datetime.utcnow(),
+    )
+    db.add(db_recipe)
+    db.commit()
+    db.refresh(db_recipe)
+    return db_recipe
+
+@router.get("/{recipe_id}", response_model=RecipeSchema)
+def read_recipe(recipe_id: int, db: Session = Depends(get_db)):
+    recipe = db.query(RecipeModel).filter(RecipeModel.RecipeID == recipe_id).first()
+    if recipe is None:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    return recipe
+
+@router.put("/{recipe_id}", response_model=RecipeSchema)
+def update_recipe(recipe_id: int, recipe: RecipeCreate, db: Session = Depends(get_db)):
+    db_recipe = db.query(RecipeModel).filter(RecipeModel.RecipeID == recipe_id).first()
+    if db_recipe is None:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    for key, value in recipe.dict().items():
+        setattr(db_recipe, key, value)
+    db_recipe.UpdatedAt = datetime.utcnow()
+    db.commit()
+    db.refresh(db_recipe)
+    return db_recipe
+
+@router.delete("/{recipe_id}", response_model=RecipeSchema)
+def delete_recipe(recipe_id: int, db: Session = Depends(get_db)):
+    db_recipe = db.query(RecipeModel).filter(RecipeModel.RecipeID == recipe_id).first()
+    if db_recipe is None:
+        raise HTTPException(status_code=404, detail="Recipe not found")
+    db.delete(db_recipe)
+    db.commit()
+    return db_recipe
+
+
+==================== C:\Code\recipe-app\server\api\routes\recipe_authors.py ====================
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from database import get_db
+from models import RecipeAuthor as RecipeAuthorModel
+from schemas.recipe_author import RecipeAuthor as RecipeAuthorSchema, RecipeAuthorCreate, RecipeAuthorUpdate
+from typing import List
+
+router = APIRouter(prefix="/api/recipe-authors")
+
+@router.get("/", response_model=List[RecipeAuthorSchema])
+def read_recipe_authors(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    recipe_authors = db.query(RecipeAuthorModel).offset(skip).limit(limit).all()
+    return recipe_authors
+
+@router.post("/", response_model=RecipeAuthorSchema, status_code=status.HTTP_201_CREATED)
+def create_recipe_author(recipe_author: RecipeAuthorCreate, db: Session = Depends(get_db)):
+    db_recipe_author = RecipeAuthorModel(
+        AuthorName=recipe_author.AuthorName,
+        AuthorImageURL=recipe_author.AuthorImageURL,
+    )
+    db.add(db_recipe_author)
+    db.commit()
+    db.refresh(db_recipe_author)
+    return db_recipe_author
+
+@router.get("/{author_id}", response_model=RecipeAuthorSchema)
+def read_recipe_author(author_id: int, db: Session = Depends(get_db)):
+    recipe_author = db.query(RecipeAuthorModel).filter(RecipeAuthorModel.AuthorID == author_id).first()
+    if recipe_author is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipe author not found")
+    return recipe_author
+
+@router.put("/{author_id}", response_model=RecipeAuthorSchema)
+def update_recipe_author(author_id: int, recipe_author: RecipeAuthorUpdate, db: Session = Depends(get_db)):
+    db_recipe_author = db.query(RecipeAuthorModel).filter(RecipeAuthorModel.AuthorID == author_id).first()
+    if db_recipe_author is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipe author not found")
+    for key, value in recipe_author.dict().items():
+        setattr(db_recipe_author, key, value)
+    db.commit()
+    db.refresh(db_recipe_author)
+    return db_recipe_author
+
+@router.delete("/{author_id}", response_model=RecipeAuthorSchema)
+def delete_recipe_author(author_id: int, db: Session = Depends(get_db)):
+    db_recipe_author = db.query(RecipeAuthorModel).filter(RecipeAuthorModel.AuthorID == author_id).first()
+    if db_recipe_author is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipe author not found")
+    db.delete(db_recipe_author)
+    db.commit()
+    return db_recipe_author
+
+
+==================== C:\Code\recipe-app\server\api\routes\recipe_books.py ====================
+
+# api/routes/recipe_books.py
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from database import get_db
+from models import RecipeBook as RecipeBookModel
+from schemas.recipe_book import RecipeBook as RecipeBookSchema, RecipeBookCreate, RecipeBookUpdate
+from typing import List
+
+router = APIRouter(prefix="/api/recipe-books")
+
+@router.get("/", response_model=List[RecipeBookSchema])
+def read_recipe_books(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    recipe_books = db.query(RecipeBookModel).offset(skip).limit(limit).all()
+    return recipe_books
+
+@router.post("/", response_model=RecipeBookSchema, status_code=status.HTTP_201_CREATED)
+def create_recipe_book(recipe_book: RecipeBookCreate, db: Session = Depends(get_db)):
+    db_recipe_book = RecipeBookModel(
+        AuthorID=recipe_book.AuthorID,
+        BookName=recipe_book.BookName,
+        CoverArtURL=recipe_book.CoverArtURL,
+    )
+    db.add(db_recipe_book)
+    db.commit()
+    db.refresh(db_recipe_book)
+    return db_recipe_book
+
+@router.get("/{book_id}", response_model=RecipeBookSchema)
+def read_recipe_book(book_id: int, db: Session = Depends(get_db)):
+    recipe_book = db.query(RecipeBookModel).filter(RecipeBookModel.BookID == book_id).first()
+    if recipe_book is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipe book not found")
+    return recipe_book
+
+@router.put("/{book_id}", response_model=RecipeBookSchema)
+def update_recipe_book(book_id: int, recipe_book: RecipeBookUpdate, db: Session = Depends(get_db)):
+    db_recipe_book = db.query(RecipeBookModel).filter(RecipeBookModel.BookID == book_id).first()
+    if db_recipe_book is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipe book not found")
+    for key, value in recipe_book.dict().items():
+        setattr(db_recipe_book, key, value)
+    db.commit()
+    db.refresh(db_recipe_book)
+    return db_recipe_book
+
+@router.delete("/{book_id}", response_model=RecipeBookSchema)
+def delete_recipe_book(book_id: int, db: Session = Depends(get_db)):
+    db_recipe_book = db.query(RecipeBookModel).filter(RecipeBookModel.BookID == book_id).first()
+    if db_recipe_book is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipe book not found")
+    db.delete(db_recipe_book)
+    db.commit()
+    return db_recipe_book
+
+
+==================== C:\Code\recipe-app\server\api\routes\recipe_ingredients.py ====================
+
+# api/routes/recipe_ingredients.py
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from typing import List
+from database import get_db
+from models import RecipeIngredient as RecipeIngredientModel
+from schemas.recipe_ingredient import (
+    RecipeIngredient as RecipeIngredientSchema,
+    RecipeIngredientCreate,
+    RecipeIngredientUpdate
+)
+from datetime import datetime
+
+router = APIRouter(prefix="/api/recipe-ingredients")
+
+@router.get("/", response_model=List[RecipeIngredientSchema])
+def read_recipe_ingredients(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    recipe_ingredients = db.query(RecipeIngredientModel).offset(skip).limit(limit).all()
+    return recipe_ingredients
+
+@router.post("/", response_model=RecipeIngredientSchema, status_code=status.HTTP_201_CREATED)
+def create_recipe_ingredient(recipe_ingredient: RecipeIngredientCreate, db: Session = Depends(get_db)):
+    db_recipe_ingredient = RecipeIngredientModel(
+        RecipeID=recipe_ingredient.RecipeID,
+        IngredientID=recipe_ingredient.IngredientID,
+        SectionID=recipe_ingredient.SectionID,
+        Quantity=recipe_ingredient.Quantity,
+        UnitID=recipe_ingredient.UnitID
+    )
+    db.add(db_recipe_ingredient)
+    db.commit()
+    db.refresh(db_recipe_ingredient)
+    return db_recipe_ingredient
+
+@router.put("/{recipe_ingredient_id}", response_model=RecipeIngredientSchema)
+def update_recipe_ingredient(recipe_ingredient_id: int, recipe_ingredient: RecipeIngredientUpdate, db: Session = Depends(get_db)):
+    db_recipe_ingredient = db.query(RecipeIngredientModel).filter(RecipeIngredientModel.RecipeIngredientID == recipe_ingredient_id).first()
+    if db_recipe_ingredient is None:
+        raise HTTPException(status_code=404, detail="Recipe ingredient not found")
+    for key, value in recipe_ingredient.dict().items():
+        setattr(db_recipe_ingredient, key, value)
+    db_recipe_ingredient.UpdatedAt = datetime.utcnow()
+    db.commit()
+    db.refresh(db_recipe_ingredient)
+    return db_recipe_ingredient
+
+@router.delete("/{recipe_ingredient_id}", response_model=RecipeIngredientSchema)
+def delete_recipe_ingredient(recipe_ingredient_id: int, db: Session = Depends(get_db)):
+    db_recipe_ingredient = db.query(RecipeIngredientModel).filter(RecipeIngredientModel.RecipeIngredientID == recipe_ingredient_id).first()
+    if db_recipe_ingredient is None:
+        raise HTTPException(status_code=404, detail="Recipe ingredient not found")
+    db.delete(db_recipe_ingredient)
+    db.commit()
+    return db_recipe_ingredient
+
+
+==================== C:\Code\recipe-app\server\api\routes\shopping_lists.py ====================
+
+# api/routes/shopping_lists.py
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from database import get_db
+from models import ShoppingList as ShoppingListModel
+from schemas.shopping_list import ShoppingList as ShoppingListSchema, ShoppingListCreate, ShoppingListUpdate
+from typing import List
+from datetime import datetime
+
+router = APIRouter(prefix="/api/shopping-lists")
+
+@router.get("/", response_model=List[ShoppingListSchema])
+def read_shopping_lists(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    shopping_lists = db.query(ShoppingListModel).offset(skip).limit(limit).all()
+    return shopping_lists
+
+@router.post("/", response_model=ShoppingListSchema, status_code=status.HTTP_201_CREATED)
+def create_shopping_list(shopping_list: ShoppingListCreate, db: Session = Depends(get_db)):
+    db_shopping_list = ShoppingListModel(
+        UserID=shopping_list.UserID,
+        CreatedAt=datetime.utcnow(),
+        UpdatedAt=datetime.utcnow(),
+    )
+    db.add(db_shopping_list)
+    db.commit()
+    db.refresh(db_shopping_list)
+    return db_shopping_list
+
+@router.get("/{shopping_list_id}", response_model=ShoppingListSchema)
+def read_shopping_list(shopping_list_id: int, db: Session = Depends(get_db)):
+    shopping_list = db.query(ShoppingListModel).filter(ShoppingListModel.ShoppingListID == shopping_list_id).first()
+    if shopping_list is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shopping list not found")
+    return shopping_list
+
+@router.put("/{shopping_list_id}", response_model=ShoppingListSchema)
+def update_shopping_list(shopping_list_id: int, shopping_list: ShoppingListUpdate, db: Session = Depends(get_db)):
+    db_shopping_list = db.query(ShoppingListModel).filter(ShoppingListModel.ShoppingListID == shopping_list_id).first()
+    if db_shopping_list is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shopping list not found")
+    for key, value in shopping_list.dict().items():
+        setattr(db_shopping_list, key, value)
+    db_shopping_list.UpdatedAt = datetime.utcnow()
+    db.commit()
+    db.refresh(db_shopping_list)
+    return db_shopping_list
+
+@router.delete("/{shopping_list_id}", response_model=ShoppingListSchema)
+def delete_shopping_list(shopping_list_id: int, db: Session = Depends(get_db)):
+    db_shopping_list = db.query(ShoppingListModel).filter(ShoppingListModel.ShoppingListID == shopping_list_id).first()
+    if db_shopping_list is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shopping list not found")
+    db.delete(db_shopping_list)
+    db.commit()
+    return db_shopping_list
+
+
+==================== C:\Code\recipe-app\server\api\routes\shopping_list_ingredients.py ====================
+
+# api/routes/shopping_list_ingredients.py
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from database import get_db
+from models import ShoppingListIngredient as ShoppingListIngredientModel
+from schemas.shopping_list_ingredient import ShoppingListIngredient as ShoppingListIngredientSchema, ShoppingListIngredientCreate, ShoppingListIngredientUpdate
+from typing import List
+
+router = APIRouter(prefix="/api/shopping-list-ingredients")
+
+@router.get("/", response_model=List[ShoppingListIngredientSchema])
+def read_shopping_list_ingredients(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    shopping_list_ingredients = db.query(ShoppingListIngredientModel).offset(skip).limit(limit).all()
+    return shopping_list_ingredients
+
+@router.post("/", response_model=ShoppingListIngredientSchema, status_code=status.HTTP_201_CREATED)
+def create_shopping_list_ingredient(shopping_list_ingredient: ShoppingListIngredientCreate, db: Session = Depends(get_db)):
+    db_shopping_list_ingredient = ShoppingListIngredientModel(
+        ShoppingListID=shopping_list_ingredient.ShoppingListID,
+        MealPlanRecipeID=shopping_list_ingredient.MealPlanRecipeID,
+        IngredientID=shopping_list_ingredient.IngredientID,
+        Quantity=shopping_list_ingredient.Quantity,
+        UnitID=shopping_list_ingredient.UnitID,
+        IsManual=shopping_list_ingredient.IsManual,
+        AlreadyHave=shopping_list_ingredient.AlreadyHave,
+        Purchased=shopping_list_ingredient.Purchased,
+    )
+    db.add(db_shopping_list_ingredient)
+    db.commit()
+    db.refresh(db_shopping_list_ingredient)
+    return db_shopping_list_ingredient
+
+@router.get("/{shopping_list_ingredient_id}", response_model=ShoppingListIngredientSchema)
+def read_shopping_list_ingredient(shopping_list_ingredient_id: int, db: Session = Depends(get_db)):
+    shopping_list_ingredient = db.query(ShoppingListIngredientModel).filter(ShoppingListIngredientModel.ShoppingListIngredientID == shopping_list_ingredient_id).first()
+    if shopping_list_ingredient is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shopping list ingredient not found")
+    return shopping_list_ingredient
+
+@router.put("/{shopping_list_ingredient_id}", response_model=ShoppingListIngredientSchema)
+def update_shopping_list_ingredient(shopping_list_ingredient_id: int, shopping_list_ingredient: ShoppingListIngredientUpdate, db: Session = Depends(get_db)):
+    db_shopping_list_ingredient = db.query(ShoppingListIngredientModel).filter(ShoppingListIngredientModel.ShoppingListIngredientID == shopping_list_ingredient_id).first()
+    if db_shopping_list_ingredient is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shopping list ingredient not found")
+    for key, value in shopping_list_ingredient.dict().items():
+        setattr(db_shopping_list_ingredient, key, value)
+    db.commit()
+    db.refresh(db_shopping_list_ingredient)
+    return db_shopping_list_ingredient
+
+@router.delete("/{shopping_list_ingredient_id}", response_model=ShoppingListIngredientSchema)
+def delete_shopping_list_ingredient(shopping_list_ingredient_id: int, db: Session = Depends(get_db)):
+    db_shopping_list_ingredient = db.query(ShoppingListIngredientModel).filter(ShoppingListIngredientModel.ShoppingListIngredientID == shopping_list_ingredient_id).first()
+    if db_shopping_list_ingredient is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Shopping list ingredient not found")
+    db.delete(db_shopping_list_ingredient)
+    db.commit()
+    return db_shopping_list_ingredient
+
+
+==================== C:\Code\recipe-app\server\api\routes\units.py ====================
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from typing import List
+from database import get_db
+from models import Unit as UnitModel
+from schemas.unit import Unit as UnitSchema, UnitCreate, UnitUpdate
+
+router = APIRouter(prefix="/api/units")
+
+@router.get("/", response_model=List[UnitSchema])
+def read_units(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    units = db.query(UnitModel).offset(skip).limit(limit).all()
+    return units
+
+@router.post("/", response_model=UnitSchema, status_code=status.HTTP_201_CREATED)
+def create_unit(unit: UnitCreate, db: Session = Depends(get_db)):
+    db_unit = UnitModel(
+        UnitName=unit.UnitName,
+        Abbreviation=unit.Abbreviation,
+    )
+    db.add(db_unit)
+    db.commit()
+    db.refresh(db_unit)
+    return db_unit
+
+@router.put("/{unit_id}", response_model=UnitSchema)
+def update_unit(unit_id: int, unit: UnitUpdate, db: Session = Depends(get_db)):
+    db_unit = db.query(UnitModel).filter(UnitModel.UnitID == unit_id).first()
+    if db_unit is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found")
+    for key, value in unit.dict().items():
+        setattr(db_unit, key, value)
+    db.commit()
+    db.refresh(db_unit)
+    return db_unit
+
+@router.delete("/{unit_id}", response_model=UnitSchema)
+def delete_unit(unit_id: int, db: Session = Depends(get_db)):
+    db_unit = db.query(UnitModel).filter(UnitModel.UnitID == unit_id).first()
+    if db_unit is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Unit not found")
+    db.delete(db_unit)
+    db.commit()
+    return db_unit
+
+
+==================== C:\Code\recipe-app\server\api\routes\users.py ====================
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from database import get_db
+from models import User as UserModel
+from schemas.user import UserRead, UserCreate, UserLogin
+from typing import List
+from datetime import datetime
+import bcrypt
+
+router = APIRouter(prefix="/api/users")
+
+@router.get("/", response_model=List[UserRead])
+def read_users(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
+    users = db.query(UserModel).offset(skip).limit(limit).all()
+    return users
+
+@router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
+    hashed_password = bcrypt.hashpw(user.Password.encode('utf-8'), bcrypt.gensalt())
+    db_user = UserModel(
+        Username=user.Username,
+        PasswordHash=hashed_password.decode('utf-8'),
+        Email=user.Email,
+        CreatedAt=datetime.utcnow(),
+        UpdatedAt=datetime.utcnow(),
+    )
+    try:
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username or Email already exists.")
+    return db_user
+
+@router.post("/login")
+def login_user(user: UserLogin, db: Session = Depends(get_db)):
+    db_user = db.query(UserModel).filter(UserModel.Username == user.Username).first()
+    if not db_user or not bcrypt.checkpw(user.Password.encode('utf-8'), db_user.PasswordHash.encode('utf-8')):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid username or password")
+    return {"message": "Login successful"}
+
+@router.get("/{user_id}", response_model=UserRead)
+def read_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(UserModel).filter(UserModel.UserID == user_id).first()
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return user
+
+@router.put("/{user_id}", response_model=UserRead)
+def update_user(user_id: int, user: UserCreate, db: Session = Depends(get_db)):
+    db_user = db.query(UserModel).filter(UserModel.UserID == user_id).first()
+    if db_user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    for key, value in user.dict().items():
+        if key == "Password":
+            value = bcrypt.hashpw(value.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        setattr(db_user, key, value)
+    db_user.UpdatedAt = datetime.utcnow()
+    try:
+        db.commit()
+        db.refresh(db_user)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Username or Email already exists.")
+    return db_user
+
+@router.delete("/{user_id}", response_model=UserRead)
+def delete_user(user_id: int, db: Session = Depends(get_db)):
+    db_user = db.query(UserModel).filter(UserModel.UserID == user_id).first()
+    if db_user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    db.delete(db_user)
+    db.commit()
+    return db_user
+
+
+==================== C:\Code\recipe-app\server\api\routes\__init__.py ====================
+
+from .ingredients import router as ingredients_router
+from .recipes import router as recipes_router
+from .users import router as users_router
+from .ingredient_categories import router as ingredient_categories_router
+from .ingredient_sub_categories import router as ingredient_sub_categories_router
+from .recipe_authors import router as recipe_authors_router
+from .recipe_books import router as recipe_books_router
+from .recipe_ingredients import router as recipe_ingredients_router
+from .units import router as units_router
+from .meal_plans import router as meal_plans_router
+from .meal_plan_recipes import router as meal_plan_recipes_router
+from .shopping_lists import router as shopping_lists_router
+from .shopping_list_ingredients import router as shopping_list_ingredients_router
+
+__all__ = [
+    "ingredients_router",
+    "recipes_router",
+    "users_router",
+    "ingredient_categories_router",
+    "ingredient_sub_categories_router",
+    "recipe_authors_router",
+    "recipe_books_router",
+    "recipe_ingredients_router",
+    "units_router",
+    "meal_plans_router",
+    "meal_plan_recipes_router",
+    "shopping_lists_router",
+    "shopping_list_ingredients_router",
+]
+
+
+==================== C:\Code\recipe-app\server\models\base.py ====================
+
+from sqlalchemy.ext.declarative import declarative_base
+
+Base = declarative_base()
+
+
+==================== C:\Code\recipe-app\server\models\ingredient.py ====================
+
+from sqlalchemy import Column, Integer, String, Float, TIMESTAMP, ForeignKey
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class Ingredient(Base):
+    __tablename__ = "Ingredients"
+
+    IngredientID = Column(Integer, primary_key=True)
+    SubCategoryID = Column(Integer, ForeignKey("IngredientSubCategories.SubCategoryID"), nullable=False)
+    IngredientName = Column(String, nullable=False)
+    PurchaseUnitID = Column(Integer, ForeignKey("Units.UnitID"))
+    PurchaseWeightVolume = Column(Float)
+    PurchaseWeightUnitID = Column(Integer, ForeignKey("Units.UnitID"))
+    CreatedAt = Column(TIMESTAMP)
+    UpdatedAt = Column(TIMESTAMP)
+
+    subcategory = relationship("IngredientSubCategory", back_populates="ingredients")
+    recipes = relationship("RecipeIngredient", back_populates="ingredient")
+    shopping_list_ingredients = relationship("ShoppingListIngredient", back_populates="ingredient")
+
+
+==================== C:\Code\recipe-app\server\models\ingredient_category.py ====================
+
+from sqlalchemy import Column, Integer, String, TIMESTAMP
+from sqlalchemy.orm import relationship
+from .base import Base
+from datetime import datetime
+
+class IngredientCategory(Base):
+    __tablename__ = "IngredientCategories"
+
+    CategoryID = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    CategoryName = Column(String, nullable=False, unique=True)
+    CreatedAt = Column(TIMESTAMP, default=datetime.utcnow)
+    UpdatedAt = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    subcategories = relationship("IngredientSubCategory", order_by="IngredientSubCategory.SubCategoryID", back_populates="category")
+
+
+==================== C:\Code\recipe-app\server\models\ingredient_sub_category.py ====================
+
+from sqlalchemy import Column, Integer, String, TIMESTAMP, ForeignKey
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class IngredientSubCategory(Base):
+    __tablename__ = "IngredientSubCategories"
+
+    SubCategoryID = Column(Integer, primary_key=True)
+    CategoryID = Column(Integer, ForeignKey("IngredientCategories.CategoryID"), nullable=False)
+    SubCategoryName = Column(String, nullable=False)
+    CreatedAt = Column(TIMESTAMP)
+    UpdatedAt = Column(TIMESTAMP)
+
+    category = relationship("IngredientCategory", back_populates="subcategories")
+    ingredients = relationship("Ingredient", order_by="Ingredient.IngredientID", back_populates="subcategory")
+
+
+==================== C:\Code\recipe-app\server\models\meal_plan.py ====================
+
+from sqlalchemy import Column, Integer, String, Date, TIMESTAMP, ForeignKey
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class MealPlan(Base):
+    __tablename__ = "MealPlans"
+
+    MealPlanID = Column(Integer, primary_key=True)
+    UserID = Column(Integer, ForeignKey("Users.UserID"), nullable=False)
+    PlanName = Column(String)
+    StartDate = Column(Date)
+    EndDate = Column(Date)
+    CreatedAt = Column(TIMESTAMP)
+    UpdatedAt = Column(TIMESTAMP)
+
+    user = relationship("User", back_populates="meal_plans")
+    recipes = relationship("MealPlanRecipe", back_populates="meal_plan")
+
+
+==================== C:\Code\recipe-app\server\models\meal_plan_recipe.py ====================
+
+from sqlalchemy import Column, Integer, String, Date, ForeignKey
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class MealPlanRecipe(Base):
+    __tablename__ = "MealPlanRecipes"
+
+    MealPlanRecipeID = Column(Integer, primary_key=True)
+    MealPlanID = Column(Integer, ForeignKey("MealPlans.MealPlanID"), nullable=False)
+    RecipeID = Column(Integer, ForeignKey("Recipes.RecipeID"), nullable=False)
+    MealType = Column(String)
+    Date = Column(Date, nullable=False)
+
+    meal_plan = relationship("MealPlan", back_populates="recipes")
+    recipe = relationship("Recipe", back_populates="meal_plan_recipes")
+    shopping_list_ingredients = relationship("ShoppingListIngredient", back_populates="meal_plan_recipe")
+
+
+==================== C:\Code\recipe-app\server\models\recipe.py ====================
+
+from sqlalchemy import Column, Integer, String, TIMESTAMP, ForeignKey
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class Recipe(Base):
+    __tablename__ = "Recipes"
+
+    RecipeID = Column(Integer, primary_key=True)
+    UserID = Column(Integer, ForeignKey("Users.UserID"))
+    RecipeName = Column(String, nullable=False)
+    AuthorID = Column(Integer, ForeignKey("RecipeAuthors.AuthorID"))
+    BookID = Column(Integer, ForeignKey("RecipeBooks.BookID"))
+    PageNumber = Column(Integer)
+    OnlineURL = Column(String)
+    CookTime = Column(Integer)
+    Difficulty = Column(String)
+    Type = Column(String)
+    ImageURL = Column(String)
+    Servings = Column(Integer)
+    Cuisine = Column(String)
+    CreatedAt = Column(TIMESTAMP)
+    UpdatedAt = Column(TIMESTAMP)
+
+    user = relationship("User", back_populates="recipes")
+    author = relationship("RecipeAuthor", back_populates="recipes")
+    book = relationship("RecipeBook", back_populates="recipes")
+    ingredients = relationship("RecipeIngredient", back_populates="recipe")
+    sections = relationship("RecipeIngredientSection", back_populates="recipe")
+    reviews = relationship("RecipeReview", back_populates="recipe")
+    steps = relationship("RecipeStep", back_populates="recipe")
+    tags = relationship("RecipeTag", back_populates="recipe")
+    meal_plan_recipes = relationship("MealPlanRecipe", back_populates="recipe")
+
+
+==================== C:\Code\recipe-app\server\models\recipe_author.py ====================
+
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class RecipeAuthor(Base):
+    __tablename__ = "RecipeAuthors"
+
+    AuthorID = Column(Integer, primary_key=True)
+    AuthorName = Column(String, nullable=False)
+    AuthorImageURL = Column(String)
+
+    books = relationship("RecipeBook", back_populates="author")
+    recipes = relationship("Recipe", back_populates="author")
+
+
+==================== C:\Code\recipe-app\server\models\recipe_book.py ====================
+
+# models/recipe_book.py
+from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class RecipeBook(Base):
+    __tablename__ = "RecipeBooks"
+
+    BookID = Column(Integer, primary_key=True)
+    AuthorID = Column(Integer, ForeignKey("RecipeAuthors.AuthorID"), nullable=False)
+    BookName = Column(String, nullable=False)
+    CoverArtURL = Column(String)
+
+    author = relationship("RecipeAuthor", back_populates="books")
+    recipes = relationship("Recipe", back_populates="book")
+
+
+==================== C:\Code\recipe-app\server\models\recipe_ingredient.py ====================
+
+from sqlalchemy import Column, Integer, Float, ForeignKey
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class RecipeIngredient(Base):
+    __tablename__ = "RecipeIngredients"
+
+    RecipeIngredientID = Column(Integer, primary_key=True)
+    RecipeID = Column(Integer, ForeignKey("Recipes.RecipeID"), nullable=False)
+    IngredientID = Column(Integer, ForeignKey("Ingredients.IngredientID"), nullable=False)
+    SectionID = Column(Integer, ForeignKey("RecipeIngredientSections.SectionID"))
+    Quantity = Column(Float)
+    UnitID = Column(Integer, ForeignKey("Units.UnitID"))
+
+    recipe = relationship("Recipe", back_populates="ingredients")
+    ingredient = relationship("Ingredient", back_populates="recipes")
+    section = relationship("RecipeIngredientSection", back_populates="ingredients")
+    unit = relationship("Unit", back_populates="recipe_ingredients")
+
+
+==================== C:\Code\recipe-app\server\models\recipe_ingredient_section.py ====================
+
+from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class RecipeIngredientSection(Base):
+    __tablename__ = "RecipeIngredientSections"
+
+    SectionID = Column(Integer, primary_key=True)
+    RecipeID = Column(Integer, ForeignKey("Recipes.RecipeID"), nullable=False)
+    SectionName = Column(String, nullable=False)
+
+    recipe = relationship("Recipe", back_populates="sections")
+    ingredients = relationship("RecipeIngredient", back_populates="section")
+
+
+==================== C:\Code\recipe-app\server\models\recipe_review.py ====================
+
+from sqlalchemy import Column, Integer, Float, String, TIMESTAMP, ForeignKey
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class RecipeReview(Base):
+    __tablename__ = "RecipeReviews"
+
+    ReviewID = Column(Integer, primary_key=True)
+    UserID = Column(Integer, ForeignKey("Users.UserID"), nullable=False)
+    RecipeID = Column(Integer, ForeignKey("Recipes.RecipeID"), nullable=False)
+    Rating = Column(Float, nullable=False)
+    ReviewText = Column(String)
+    CreatedAt = Column(TIMESTAMP)
+
+    user = relationship("User", back_populates="reviews")
+    recipe = relationship("Recipe", back_populates="reviews")
+
+
+==================== C:\Code\recipe-app\server\models\recipe_step.py ====================
+
+from sqlalchemy import Column, Integer, String, ForeignKey
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class RecipeStep(Base):
+    __tablename__ = "RecipeSteps"
+
+    StepID = Column(Integer, primary_key=True)
+    RecipeID = Column(Integer, ForeignKey("Recipes.RecipeID"), nullable=False)
+    StepNumber = Column(Integer, nullable=False)
+    Description = Column(String, nullable=False)
+
+    recipe = relationship("Recipe", back_populates="steps")
+
+
+==================== C:\Code\recipe-app\server\models\recipe_tag.py ====================
+
+from sqlalchemy import Column, Integer, ForeignKey
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class RecipeTag(Base):
+    __tablename__ = "RecipeTags"
+
+    RecipeTagID = Column(Integer, primary_key=True)
+    RecipeID = Column(Integer, ForeignKey("Recipes.RecipeID"), nullable=False)
+    TagID = Column(Integer, ForeignKey("Tags.TagID"), nullable=False)
+
+    recipe = relationship("Recipe", back_populates="tags")
+    tag = relationship("Tag", back_populates="recipes")
+
+
+==================== C:\Code\recipe-app\server\models\shopping_list.py ====================
+
+from sqlalchemy import Column, Integer, TIMESTAMP, ForeignKey
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class ShoppingList(Base):
+    __tablename__ = "ShoppingLists"
+
+    ShoppingListID = Column(Integer, primary_key=True)
+    UserID = Column(Integer, ForeignKey("Users.UserID"), nullable=False)
+    CreatedAt = Column(TIMESTAMP)
+    UpdatedAt = Column(TIMESTAMP)
+
+    user = relationship("User", back_populates="shopping_lists")
+    ingredients = relationship("ShoppingListIngredient", back_populates="shopping_list")
+
+
+==================== C:\Code\recipe-app\server\models\shopping_list_ingredient.py ====================
+
+from sqlalchemy import Column, Integer, Float, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class ShoppingListIngredient(Base):
+    __tablename__ = "ShoppingListIngredients"
+
+    ShoppingListIngredientID = Column(Integer, primary_key=True)
+    ShoppingListID = Column(Integer, ForeignKey("ShoppingLists.ShoppingListID"), nullable=False)
+    MealPlanRecipeID = Column(Integer, ForeignKey("MealPlanRecipes.MealPlanRecipeID"))
+    IngredientID = Column(Integer, ForeignKey("Ingredients.IngredientID"), nullable=False)
+    Quantity = Column(Float)
+    UnitID = Column(Integer, ForeignKey("Units.UnitID"))
+    IsManual = Column(Boolean)
+    AlreadyHave = Column(Boolean)
+    Purchased = Column(Boolean)
+
+    shopping_list = relationship("ShoppingList", back_populates="ingredients")
+    meal_plan_recipe = relationship("MealPlanRecipe", back_populates="shopping_list_ingredients")
+    ingredient = relationship("Ingredient", back_populates="shopping_list_ingredients")
+    unit = relationship("Unit", back_populates="shopping_list_ingredients")
+
+
+==================== C:\Code\recipe-app\server\models\tag.py ====================
+
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class Tag(Base):
+    __tablename__ = "Tags"
+
+    TagID = Column(Integer, primary_key=True)
+    TagName = Column(String, nullable=False, unique=True)
+
+    recipes = relationship("RecipeTag", back_populates="tag")
+
+
+==================== C:\Code\recipe-app\server\models\unit.py ====================
+
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class Unit(Base):
+    __tablename__ = "Units"
+
+    UnitID = Column(Integer, primary_key=True)
+    UnitName = Column(String, nullable=False, unique=True)
+    Abbreviation = Column(String, nullable=False, unique=True)
+    
+    recipe_ingredients = relationship("RecipeIngredient", back_populates="unit")
+    shopping_list_ingredients = relationship("ShoppingListIngredient", back_populates="unit")
+    unit_conversions_from = relationship("UnitConversion", foreign_keys="[UnitConversion.FromUnitID]", back_populates="from_unit")
+    unit_conversions_to = relationship("UnitConversion", foreign_keys="[UnitConversion.ToUnitID]", back_populates="to_unit")
+
+
+==================== C:\Code\recipe-app\server\models\unit_conversion.py ====================
+
+from sqlalchemy import Column, Integer, Float, ForeignKey
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class UnitConversion(Base):
+    __tablename__ = "UnitConversions"
+
+    FromUnitID = Column(Integer, ForeignKey("Units.UnitID"), primary_key=True)
+    ToUnitID = Column(Integer, ForeignKey("Units.UnitID"), primary_key=True)
+    ConversionFactor = Column(Float, nullable=False)
+
+    from_unit = relationship("Unit", foreign_keys=[FromUnitID], back_populates="unit_conversions_from")
+    to_unit = relationship("Unit", foreign_keys=[ToUnitID], back_populates="unit_conversions_to")
+
+
+==================== C:\Code\recipe-app\server\models\user.py ====================
+
+from sqlalchemy import Column, Integer, String, DateTime
+from datetime import datetime
+from sqlalchemy.orm import relationship
+from .base import Base
+
+class User(Base):
+    __tablename__ = 'Users'
+    UserID = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    Username = Column(String, unique=True, index=True, nullable=False)
+    PasswordHash = Column(String, nullable=False)
+    Email = Column(String, unique=True, index=True, nullable=False)
+    CreatedAt = Column(DateTime, default=datetime.utcnow)
+    UpdatedAt = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    recipes = relationship("Recipe", back_populates="user")
+    meal_plans = relationship("MealPlan", back_populates="user")
+    reviews = relationship("RecipeReview", back_populates="user")
+    shopping_lists = relationship("ShoppingList", back_populates="user")
+
+
+==================== C:\Code\recipe-app\server\models\__init__.py ====================
+
+from .base import Base
+from .user import User
+from .recipe_author import RecipeAuthor
+from .recipe_book import RecipeBook
+from .recipe import Recipe
+from .ingredient_category import IngredientCategory
+from .ingredient_sub_category import IngredientSubCategory
+from .ingredient import Ingredient
+from .unit import Unit
+from .meal_plan import MealPlan
+from .meal_plan_recipe import MealPlanRecipe
+from .recipe_ingredient import RecipeIngredient
+from .recipe_ingredient_section import RecipeIngredientSection
+from .recipe_review import RecipeReview
+from .recipe_step import RecipeStep
+from .recipe_tag import RecipeTag
+from .shopping_list import ShoppingList
+from .shopping_list_ingredient import ShoppingListIngredient
+from .tag import Tag
+from .unit_conversion import UnitConversion
+
+
+==================== C:\Code\recipe-app\server\schemas\ingredient.py ====================
+
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+
+class IngredientBase(BaseModel):
+    IngredientName: str
+    PurchaseWeightVolume: float
+    PurchaseUnitID: Optional[int]
+    SubCategoryID: int
+    PurchaseWeightUnitID: Optional[int]
+
+class IngredientCreate(IngredientBase):
+    pass
+
+class IngredientUpdate(IngredientBase):
+    pass
+
+class Ingredient(IngredientBase):
+    IngredientID: int
+    CreatedAt: datetime
+    UpdatedAt: datetime
+
+    class Config:
+        orm_mode = True
+
+
+==================== C:\Code\recipe-app\server\schemas\ingredient_category.py ====================
+
+from pydantic import BaseModel
+from datetime import datetime
+from typing import List, Optional
+
+class IngredientCategoryBase(BaseModel):
+    CategoryName: str
+
+class IngredientCategoryCreate(IngredientCategoryBase):
+    pass
+
+class IngredientCategoryUpdate(IngredientCategoryBase):
+    pass
+
+class IngredientCategory(IngredientCategoryBase):
+    CategoryID: int
+    CreatedAt: datetime
+    UpdatedAt: datetime
+
+    class Config:
+        orm_mode = True
+
+
+==================== C:\Code\recipe-app\server\schemas\ingredient_sub_category.py ====================
+
+# schemas/ingredient_sub_category.py
+
+from pydantic import BaseModel
+from datetime import datetime
+
+class IngredientSubCategoryBase(BaseModel):
+    SubCategoryName: str
+    CategoryID: int
+
+class IngredientSubCategoryCreate(IngredientSubCategoryBase):
+    pass
+
+class IngredientSubCategoryUpdate(IngredientSubCategoryBase):
+    pass
+
+class IngredientSubCategory(IngredientSubCategoryBase):
+    SubCategoryID: int
+    CreatedAt: datetime
+    UpdatedAt: datetime
+
+    class Config:
+        orm_mode: True
+
+
+==================== C:\Code\recipe-app\server\schemas\meal_plan.py ====================
+
+# schemas/meal_plan.py
+from pydantic import BaseModel
+from datetime import datetime, date
+from typing import List, Optional
+
+class MealPlanBase(BaseModel):
+    UserID: int
+    PlanName: Optional[str] = None
+    StartDate: Optional[date] = None
+    EndDate: Optional[date] = None
+
+class MealPlanCreate(MealPlanBase):
+    pass
+
+class MealPlanUpdate(MealPlanBase):
+    pass
+
+class MealPlan(MealPlanBase):
+    MealPlanID: int
+    CreatedAt: datetime
+    UpdatedAt: datetime
+
+    class Config:
+        orm_mode = True
+
+
+==================== C:\Code\recipe-app\server\schemas\meal_plan_recipe.py ====================
+
+# schemas/meal_plan_recipe.py
+from pydantic import BaseModel
+from datetime import date
+
+class MealPlanRecipeBase(BaseModel):
+    MealPlanID: int
+    RecipeID: int
+    MealType: str
+    Date: date
+
+class MealPlanRecipeCreate(MealPlanRecipeBase):
+    pass
+
+class MealPlanRecipeUpdate(MealPlanRecipeBase):
+    pass
+
+class MealPlanRecipe(MealPlanRecipeBase):
+    MealPlanRecipeID: int
+
+    class Config:
+        orm_mode = True
+
+
+==================== C:\Code\recipe-app\server\schemas\recipe.py ====================
+
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+
+class RecipeBase(BaseModel):
+    RecipeName: str
+    AuthorID: Optional[int] = None
+    BookID: Optional[int] = None
+    PageNumber: Optional[int] = None
+    OnlineURL: Optional[str] = None
+    CookTime: Optional[int] = None
+    Difficulty: Optional[str] = None
+    Type: Optional[str] = None
+    ImageURL: Optional[str] = None
+    Servings: Optional[int] = None
+    Cuisine: Optional[str] = None
+
+class RecipeCreate(RecipeBase):
+    pass
+
+class Recipe(RecipeBase):
+    RecipeID: int
+    CreatedAt: datetime
+    UpdatedAt: datetime
+
+    class Config:
+        orm_mode = True
+
+
+==================== C:\Code\recipe-app\server\schemas\recipe_author.py ====================
+
+from pydantic import BaseModel
+from typing import Optional
+
+class RecipeAuthorBase(BaseModel):
+    AuthorName: str
+    AuthorImageURL: Optional[str] = None
+
+class RecipeAuthorCreate(RecipeAuthorBase):
+    pass
+
+class RecipeAuthorUpdate(RecipeAuthorBase):
+    pass
+
+class RecipeAuthor(RecipeAuthorBase):
+    AuthorID: int
+
+    class Config:
+        orm_mode = True
+
+
+==================== C:\Code\recipe-app\server\schemas\recipe_book.py ====================
+
+# schemas/recipe_book.py
+from pydantic import BaseModel
+from typing import Optional
+
+class RecipeBookBase(BaseModel):
+    AuthorID: int
+    BookName: str
+    CoverArtURL: Optional[str] = None
+
+class RecipeBookCreate(RecipeBookBase):
+    pass
+
+class RecipeBookUpdate(RecipeBookBase):
+    pass
+
+class RecipeBook(RecipeBookBase):
+    BookID: int
+
+    class Config:
+        orm_mode = True
+
+
+==================== C:\Code\recipe-app\server\schemas\recipe_ingredient.py ====================
+
+# schemas/recipe_ingredient.py
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+
+class RecipeIngredientBase(BaseModel):
+    RecipeID: int
+    IngredientID: int
+    SectionID: Optional[int] = None
+    Quantity: Optional[float] = None
+    UnitID: Optional[int] = None
+
+class RecipeIngredientCreate(RecipeIngredientBase):
+    pass
+
+class RecipeIngredientUpdate(RecipeIngredientBase):
+    pass
+
+class RecipeIngredient(RecipeIngredientBase):
+    RecipeIngredientID: int
+
+    class Config:
+        orm_mode = True
+
+
+==================== C:\Code\recipe-app\server\schemas\shopping_list.py ====================
+
+# schemas/shopping_list.py
+from pydantic import BaseModel
+from datetime import datetime
+from typing import List, Optional
+
+class ShoppingListBase(BaseModel):
+    UserID: int
+
+class ShoppingListCreate(ShoppingListBase):
+    pass
+
+class ShoppingListUpdate(ShoppingListBase):
+    pass
+
+class ShoppingList(ShoppingListBase):
+    ShoppingListID: int
+    CreatedAt: datetime
+    UpdatedAt: datetime
+
+    class Config:
+        orm_mode = True
+
+
+==================== C:\Code\recipe-app\server\schemas\shopping_list_ingredient.py ====================
+
+# schemas/shopping_list_ingredient.py
+from pydantic import BaseModel
+from typing import Optional
+
+class ShoppingListIngredientBase(BaseModel):
+    ShoppingListID: int
+    MealPlanRecipeID: Optional[int]
+    IngredientID: int
+    Quantity: Optional[float]
+    UnitID: Optional[int]
+    IsManual: Optional[bool]
+    AlreadyHave: Optional[bool]
+    Purchased: Optional[bool]
+
+class ShoppingListIngredientCreate(ShoppingListIngredientBase):
+    pass
+
+class ShoppingListIngredientUpdate(ShoppingListIngredientBase):
+    pass
+
+class ShoppingListIngredient(ShoppingListIngredientBase):
+    ShoppingListIngredientID: int
+
+    class Config:
+        orm_mode = True
+
+
+==================== C:\Code\recipe-app\server\schemas\unit.py ====================
+
+from pydantic import BaseModel
+from datetime import datetime
+
+class UnitBase(BaseModel):
+    UnitName: str
+    Abbreviation: str
+
+class UnitCreate(UnitBase):
+    pass
+
+class UnitUpdate(UnitBase):
+    pass
+
+class Unit(UnitBase):
+    UnitID: int
+
+    class Config:
+        orm_mode = True
+
+
+==================== C:\Code\recipe-app\server\schemas\user.py ====================
+
+from pydantic import BaseModel, EmailStr
+from datetime import datetime
+from typing import Optional
+
+class UserBase(BaseModel):
+    Username: str
+    Email: EmailStr
+
+class UserCreate(UserBase):
+    Password: str
+
+class UserRead(UserBase):
+    UserID: int
+    CreatedAt: datetime
+    UpdatedAt: datetime
+
+    class Config:
+        orm_mode = True
+
+class UserLogin(BaseModel):
+    Username: str
+    Password: str
