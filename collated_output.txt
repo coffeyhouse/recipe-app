@@ -1,0 +1,792 @@
+
+
+==================== client/src\pages\ManageMealPlans.jsx ====================
+
+// src/pages/ManageMealPlans.jsx
+
+import React, { useState, useEffect } from 'react';
+import MealPlanTable from '../components/MealPlanTable';
+import AddMealPlanModal from '../components/AddMealPlanModal';
+import AddMealPlanRecipeModal from '../components/AddMealPlanRecipeModal';
+import Calendar from '../components/Calendar';
+import { useData } from '../context/DataContext';
+
+function ManageMealPlans() {
+  const [selectedMealPlan, setSelectedMealPlan] = useState(null);
+  const [addingMeal, setAddingMeal] = useState(null);
+  const [modifyingMeal, setModifyingMeal] = useState(null);
+  const { mealPlanRecipes, recipes, deleteMealPlanRecipe } = useData();
+
+  const handleAddMeals = (mealPlan) => {
+    setSelectedMealPlan(mealPlan);
+  };
+
+  const handleAddMeal = (date, mealType) => {
+    setAddingMeal({ date, mealType });
+    document.getElementById('add_meal_plan_recipe_modal').showModal();
+  };
+
+  const handleModifyMeal = async (mealPlanRecipeId, remove = false) => {
+    if (remove) {
+      if (window.confirm('Are you sure you want to remove this meal?')) {
+        try {
+          await deleteMealPlanRecipe(mealPlanRecipeId);
+        } catch (error) {
+          console.log(error);
+          alert('Failed to remove meal');
+        }
+      }
+    } else {
+      const mealPlanRecipe = mealPlanRecipes.find(mpr => mpr.MealPlanRecipeID === mealPlanRecipeId);
+      if (mealPlanRecipe) {
+        setModifyingMeal(mealPlanRecipe);
+        document.getElementById('add_meal_plan_recipe_modal').showModal();
+      } else {
+        console.error('Meal plan recipe not found:', mealPlanRecipeId);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (modifyingMeal) {
+      setAddingMeal({
+        date: modifyingMeal.Date,
+        mealType: modifyingMeal.MealType,
+        recipeId: modifyingMeal.RecipeID,
+      });
+    }
+  }, [modifyingMeal]);
+
+  return (
+    <div className="flex flex-col p-6 gap-4">
+      <h1 className="text-3xl font-bold">Manage Meal Plans</h1>
+      <div>
+        <button className="btn btn-sm btn-secondary btn-outline" onClick={() => document.getElementById('add_meal_plan_modal').showModal()}>Add Meal Plan</button>
+      </div>
+      <MealPlanTable onManageMeals={handleAddMeals} />
+      {selectedMealPlan && (
+        <>
+          <h2 className="text-2xl font-bold mt-6">Meals for Selected Plan</h2>
+          <Calendar
+            mealPlan={selectedMealPlan}
+            mealPlanRecipes={mealPlanRecipes.filter(mpr => mpr.MealPlanID === selectedMealPlan.MealPlanID)}
+            recipes={recipes}
+            onAddMeal={handleAddMeal}
+            onModifyMeal={handleModifyMeal}
+          />
+        </>
+      )}
+      <AddMealPlanModal />
+      {selectedMealPlan && (
+        <AddMealPlanRecipeModal
+          mealPlanId={selectedMealPlan.MealPlanID}
+          startDate={selectedMealPlan.StartDate}
+          endDate={selectedMealPlan.EndDate}
+          defaultDate={addingMeal?.date}
+          defaultMealType={addingMeal?.mealType}
+          defaultRecipeId={addingMeal?.recipeId}
+        />
+      )}
+    </div>
+  );
+}
+
+export default ManageMealPlans;
+
+
+==================== client\src\components\MealPlanTable.jsx ====================
+
+import React from 'react';
+import { useData } from '../context/DataContext';
+import DeleteButton from './ui/DeleteButton';
+import Table from './ui/Table';
+import Button from './ui/Button';
+
+function MealPlanTable({ onManageMeals }) {
+  const { mealPlans, deleteMealPlan } = useData();
+
+  const handleDelete = async (mealPlanId) => {
+    if (window.confirm('Are you sure you want to delete this meal plan?')) {
+      try {
+        await deleteMealPlan(mealPlanId);
+      } catch (error) {
+        alert('Failed to delete meal plan');
+      }
+    }
+  };
+
+  const headers = ['ID', 'Plan Name', 'Start Date', 'End Date', 'Actions'];
+
+  const data = mealPlans.map((mealPlan) => ({
+    id: mealPlan.MealPlanID,
+    cells: [
+      mealPlan.MealPlanID,
+      mealPlan.PlanName,
+      mealPlan.StartDate,
+      mealPlan.EndDate,
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          variant="primary"
+          outline={true}
+          onClick={() => onManageMeals(mealPlan)}
+        >
+          Manage Meals
+        </Button>
+        <DeleteButton onClick={() => handleDelete(mealPlan.MealPlanID)} />
+      </div>
+    ],
+  }));
+
+  return (
+    <div className="overflow-x-auto">
+      <Table headers={headers} data={data} />
+    </div>
+  );
+}
+
+export default MealPlanTable;
+
+
+==================== client\src\context\DataContext.jsx ====================
+
+// src/context/DataContext.jsx
+
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import * as apiService from '../services/apiService';
+
+const DataContext = createContext();
+
+export const DataProvider = ({ children }) => {
+  const [categories, setCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+  const [ingredients, setIngredients] = useState([]);
+  const [authors, setAuthors] = useState([]);
+  const [recipeBooks, setRecipeBooks] = useState([]);
+  const [recipes, setRecipes] = useState([]);
+  const [units, setUnits] = useState([]);
+  const [recipeIngredients, setRecipeIngredients] = useState([]);
+  const [mealPlans, setMealPlans] = useState([]);
+  const [mealPlanRecipes, setMealPlanRecipes] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [
+          categoriesData,
+          subCategoriesData,
+          ingredientsData,
+          authorsData,
+          recipeBooksData,
+          recipesData,
+          unitsData,
+          recipeIngredientsData,
+          mealPlansData,
+          mealPlanRecipesData,
+        ] = await Promise.all([
+          apiService.getCategories(),
+          apiService.getSubCategories(),
+          apiService.getIngredients(),
+          apiService.getAuthors(),
+          apiService.getRecipeBooks(),
+          apiService.getRecipes(),
+          apiService.getUnits(),
+          apiService.getRecipeIngredients(),
+          apiService.getMealPlans(),
+          apiService.getMealPlanRecipes(),
+        ]);
+
+        setCategories(categoriesData);
+        setSubCategories(subCategoriesData);
+        setIngredients(ingredientsData);
+        setAuthors(authorsData);
+        setRecipeBooks(recipeBooksData);
+        setRecipes(recipesData);
+        setUnits(unitsData);
+        setRecipeIngredients(recipeIngredientsData);
+        setMealPlans(mealPlansData);
+        setMealPlanRecipes(mealPlanRecipesData);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Categories CRUD
+  const createCategory = async (categoryName) => {
+    const newCategory = await apiService.addCategory(categoryName);
+    setCategories([...categories, newCategory]);
+  };
+
+  const updateCategory = async (categoryId, categoryName) => {
+    await apiService.updateCategory(categoryId, categoryName);
+    setCategories(categories.map(cat => (cat.CategoryID === categoryId ? { ...cat, CategoryName: categoryName } : cat)));
+  };
+
+  const deleteCategory = async (categoryId) => {
+    await apiService.deleteCategory(categoryId);
+    setCategories(categories.filter(cat => cat.CategoryID !== categoryId));
+  };
+
+  // SubCategories CRUD
+  const createSubCategory = async (subCategory) => {
+    const newSubCategory = await apiService.addSubCategory(subCategory);
+    setSubCategories([...subCategories, newSubCategory]);
+  };
+
+  const updateSubCategory = async (subCategoryId, subCategoryName, categoryId) => {
+    await apiService.updateSubCategory(subCategoryId, subCategoryName, categoryId);
+    setSubCategories(subCategories.map(sub => (sub.SubCategoryID === subCategoryId ? { ...sub, SubCategoryName: subCategoryName, CategoryID: categoryId } : sub)));
+  };
+
+  const deleteSubCategory = async (subCategoryId) => {
+    await apiService.deleteSubCategory(subCategoryId);
+    setSubCategories(subCategories.filter(sub => sub.SubCategoryID !== subCategoryId));
+  };
+
+  // Ingredients CRUD
+  const createIngredient = async (ingredient) => {
+    const newIngredient = await apiService.addIngredient(ingredient);
+    setIngredients([...ingredients, newIngredient]);
+  };
+
+  const updateIngredient = async (ingredientId, ingredient) => {
+    await apiService.updateIngredient(ingredientId, ingredient);
+    setIngredients(ingredients.map(ing => (ing.IngredientID === ingredientId ? { ...ing, ...ingredient } : ing)));
+  };
+
+  const deleteIngredient = async (ingredientId) => {
+    await apiService.deleteIngredient(ingredientId);
+    setIngredients(ingredients.filter(ing => ing.IngredientID !== ingredientId));
+  };
+
+  // Authors CRUD
+  const createAuthor = async (authorName, authorImageURL) => {
+    const newAuthor = await apiService.addAuthor(authorName, authorImageURL);
+    setAuthors([...authors, newAuthor]);
+  };
+
+  const updateAuthor = async (authorId, author) => {
+    await apiService.updateAuthor(authorId, author);
+    setAuthors(authors.map(auth => (auth.AuthorID === authorId ? { ...auth, ...author } : auth)));
+  };
+
+  const deleteAuthor = async (authorId) => {
+    await apiService.deleteAuthor(authorId);
+    setAuthors(authors.filter(auth => auth.AuthorID !== authorId));
+  };
+
+  // Recipe Books CRUD
+  const createRecipeBook = async (recipeBook) => {
+    const newRecipeBook = await apiService.addRecipeBook(recipeBook);
+    setRecipeBooks([...recipeBooks, newRecipeBook]);
+  };
+
+  const updateRecipeBook = async (recipeBookId, recipeBook) => {
+    await apiService.updateRecipeBook(recipeBookId, recipeBook);
+    setRecipeBooks(recipeBooks.map(book => (book.BookID === recipeBookId ? { ...book, ...recipeBook } : book)));
+  };
+
+  const deleteRecipeBook = async (recipeBookId) => {
+    await apiService.deleteRecipeBook(recipeBookId);
+    setRecipeBooks(recipeBooks.filter(book => book.BookID !== recipeBookId));
+  };
+
+  // Recipes CRUD
+  const createRecipe = async (recipe) => {
+    const newRecipe = await apiService.addRecipe(recipe);
+    setRecipes([...recipes, newRecipe]);
+  };
+
+  const updateRecipe = async (recipeId, recipe) => {
+    await apiService.updateRecipe(recipeId, recipe);
+    setRecipes(recipes.map(rec => (rec.RecipeID === recipeId ? { ...rec, ...recipe } : rec)));
+  };
+
+  const deleteRecipe = async (recipeId) => {
+    await apiService.deleteRecipe(recipeId);
+    setRecipes(recipes.filter(rec => rec.RecipeID !== recipeId));
+  };
+
+  const createRecipeIngredient = async (recipeIngredient) => {
+    const newRecipeIngredient = await apiService.addRecipeIngredient(recipeIngredient);
+    setRecipeIngredients([...recipeIngredients, newRecipeIngredient]);
+  };
+
+  // Meal Plans CRUD
+  const createMealPlan = async (mealPlan) => {
+    const newMealPlan = await apiService.addMealPlan(mealPlan);
+    setMealPlans([...mealPlans, newMealPlan]);
+  };
+
+  const updateMealPlan = async (mealPlanId, mealPlan) => {
+    await apiService.updateMealPlan(mealPlanId, mealPlan);
+    setMealPlans(mealPlans.map(mp => (mp.MealPlanID === mealPlanId ? { ...mp, ...mealPlan } : mp)));
+  };
+
+  const deleteMealPlan = async (mealPlanId) => {
+    await apiService.deleteMealPlan(mealPlanId);
+    setMealPlans(mealPlans.filter(mp => mp.MealPlanID !== mealPlanId));
+  };
+
+   // Meal Plan Recipes CRUD
+   const createMealPlanRecipe = async (mealPlanRecipe) => {
+    const newMealPlanRecipe = await apiService.addMealPlanRecipe(mealPlanRecipe);
+    setMealPlanRecipes([...mealPlanRecipes, newMealPlanRecipe]);
+  };
+
+  const updateMealPlanRecipe = async (mealPlanRecipeId, mealPlanRecipe) => {
+    await apiService.updateMealPlanRecipe(mealPlanRecipeId, mealPlanRecipe);
+    setMealPlanRecipes(mealPlanRecipes.map(mpr => (mpr.MealPlanRecipeID === mealPlanRecipeId ? { ...mpr, ...mealPlanRecipe } : mpr)));
+  };
+
+  const deleteMealPlanRecipe = async (mealPlanRecipeId) => {
+    await apiService.deleteMealPlanRecipe(mealPlanRecipeId);
+    setMealPlanRecipes(mealPlanRecipes.filter(mpr => mpr.MealPlanRecipeID !== mealPlanRecipeId));
+  };
+
+  return (
+    <DataContext.Provider
+      value={{
+        categories, createCategory, updateCategory, deleteCategory,
+        subCategories, createSubCategory, updateSubCategory, deleteSubCategory,
+        ingredients, createIngredient, updateIngredient, deleteIngredient,
+        authors, createAuthor, updateAuthor, deleteAuthor,
+        recipeBooks, createRecipeBook, updateRecipeBook, deleteRecipeBook,
+        recipes, createRecipe, updateRecipe, deleteRecipe,
+        units, recipeIngredients, createRecipeIngredient,
+        mealPlans, createMealPlan, updateMealPlan, deleteMealPlan,
+        mealPlanRecipes, createMealPlanRecipe, updateMealPlanRecipe, deleteMealPlanRecipe,      
+      }}
+    >
+      {children}
+    </DataContext.Provider>
+  );
+};
+
+export const useData = () => useContext(DataContext);
+
+
+==================== client\src\components\ui\DeleteButton.jsx ====================
+
+// src/components/ui/DeleteButton.jsx
+import React from 'react';
+import Button from './Button';
+
+const DeleteButton = ({ onClick }) => (
+  <Button
+    size="sm"
+    variant="error"
+    outline={true}
+    onClick={onClick}
+  >
+    Delete
+  </Button>
+);
+
+export default DeleteButton;
+
+
+==================== client\src\components\ui\Button.jsx ====================
+
+// src/components/ui/Button.jsx
+import React from 'react';
+
+const Button = ({ type, variant = 'primary', size = 'md', outline = false, block = false, circle = false, square = false, className = '', onClick, children }) => {
+  const baseClass = 'btn';
+  const variantClass = `btn-${variant}`;
+  const sizeClass = `btn-${size}`;
+  const outlineClass = outline ? 'btn-outline' : '';
+  const blockClass = block ? 'btn-block' : '';
+  const circleClass = circle ? 'btn-circle' : '';
+  const squareClass = square ? 'btn-square' : '';
+
+  const classes = `${baseClass} ${variantClass} ${sizeClass} ${outlineClass} ${blockClass} ${circleClass} ${squareClass} ${className}`;
+
+  return (
+    <button type={type} className={classes} onClick={onClick}>
+      {children}
+    </button>
+  );
+};
+
+export default Button;
+
+
+==================== client\src\components\ui\Table.jsx ====================
+
+// src/components/ui/Table.jsx
+import React, { useState } from 'react';
+import { FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+
+const Table = ({ headers, data }) => {
+  const [sortConfig, setSortConfig] = useState({ key: '', direction: 'ascending' });
+
+  const sortedData = React.useMemo(() => {
+    let sortableData = [...data];
+    if (sortConfig.key) {
+      sortableData.sort((a, b) => {
+        const aKey = a.cells[headers.indexOf(sortConfig.key)];
+        const bKey = b.cells[headers.indexOf(sortConfig.key)];
+
+        if (aKey < bKey) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aKey > bKey) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableData;
+  }, [data, sortConfig, headers]);
+
+  const requestSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (header) => {
+    if (sortConfig.key === header) {
+      return sortConfig.direction === 'ascending' ? <FaSortUp /> : <FaSortDown />;
+    }
+    return <FaSort />;
+  };
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="table table-zebra">
+        <thead>
+          <tr>
+            {headers.map((header, index) => (
+              <th key={index} onClick={() => requestSort(header)} className="cursor-pointer">
+                <div className="flex items-center">
+                  {header}
+                  <span className="ml-2">{getSortIcon(header)}</span>
+                </div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sortedData.map((row, rowIndex) => (
+            <tr key={row.id || rowIndex}>
+              {row.cells.map((cell, cellIndex) => (
+                <td key={cellIndex}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default Table;
+
+
+==================== client\src\components\AddMealPlanModal.jsx ====================
+
+// src/components/AddMealPlanModal.jsx
+
+import React, { useState } from 'react';
+import { useData } from '../context/DataContext';
+import Modal from './ui/Modal';
+import Button from './ui/Button';
+import TextInput from './ui/TextInput';
+
+function AddMealPlanModal() {
+  const [planName, setPlanName] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const { createMealPlan } = useData();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const mealPlan = {
+      PlanName: planName,
+      StartDate: startDate,
+      EndDate: endDate,
+      UserID: 1, // Adjust as needed
+    };
+
+    try {
+      await createMealPlan(mealPlan);
+      document.getElementById('add_meal_plan_modal').close();
+    } catch (error) {
+      alert('Failed to add meal plan');
+    }
+  };
+
+  return (
+    <Modal id="add_meal_plan_modal" title="Add Meal Plan">
+      <form onSubmit={handleSubmit} className='flex gap-4 flex-col'>
+        <TextInput
+          label="Plan Name"
+          value={planName}
+          onChange={(e) => setPlanName(e.target.value)}
+          required
+        />
+        <TextInput
+          label="Start Date"
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          required
+        />
+        <TextInput
+          label="End Date"
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          required
+        />
+        <Button>Add Meal Plan</Button>
+      </form>
+    </Modal>
+  );
+}
+
+export default AddMealPlanModal;
+
+
+==================== client\src\components\ui\Modal.jsx ====================
+
+import React from 'react';
+
+const Modal = ({ id, title, children, wide }) => {
+    const modalBoxClass = wide ? 'modal-box w-11/12 max-w-5xl' : 'modal-box';
+    const modalClass = wide ? 'modal' : 'modal modal-bottom sm:modal-middle';
+
+    return (
+        <dialog id={id} className={modalClass}>
+            <div className={modalBoxClass}>
+                <form method="dialog">
+                    <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+                </form>
+                <h3 className="font-bold text-lg">{title}</h3>
+                {children}
+            </div>
+        </dialog>
+    );
+};
+
+export default Modal;
+
+
+==================== client\src\components\ui\TextInput.jsx ====================
+
+import React from 'react';
+
+const TextInput = ({ label, type = 'text', value, onChange, required = false, placeholder = '', className = 'input input-bordered', min, max }) => {
+  return (
+    <label className="form-control">
+      {label && (
+        <div className="label">
+          <span className="label-text">{label}</span>
+        </div>
+      )}
+      <input
+        type={type}
+        className={className}
+        value={value}
+        onChange={onChange}
+        required={required}
+        placeholder={placeholder}
+        min={min}
+        max={max}
+      />
+    </label>
+  );
+};
+
+export default TextInput;
+
+
+==================== client\src\components\AddMealPlanRecipeModal.jsx ====================
+
+import React, { useState, useEffect } from 'react';
+import { useData } from '../context/DataContext';
+import Modal from './ui/Modal';
+import Button from './ui/Button';
+import Select from './ui/Select';
+import { format, isValid } from 'date-fns';
+
+function AddMealPlanRecipeModal({ mealPlanId, defaultDate, defaultMealType, defaultRecipeId  }) {
+  const [recipeId, setRecipeId] = useState('');
+  const [date, setDate] = useState(defaultDate && isValid(new Date(defaultDate)) ? format(new Date(defaultDate), 'yyyy-MM-dd') : '');
+  const [mealType, setMealType] = useState(defaultMealType || '');
+  const { recipes, createMealPlanRecipe } = useData();
+
+  useEffect(() => {
+    setDate(defaultDate && isValid(new Date(defaultDate)) ? format(new Date(defaultDate), 'yyyy-MM-dd') : '');
+    setMealType(defaultMealType || '');
+    setRecipeId(defaultRecipeId || '');
+  }, [defaultDate, defaultMealType, defaultRecipeId]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!mealPlanId || !recipeId || !mealType || !date) {
+      alert('All fields are required.');
+      return;
+    }
+
+    const mealPlanRecipe = {
+      MealPlanID: mealPlanId,
+      RecipeID: recipeId,
+      MealType: mealType,
+      Date: date,
+    };
+
+    try {
+      await createMealPlanRecipe(mealPlanRecipe);
+      document.getElementById('add_meal_plan_recipe_modal').close();
+      setRecipeId('');
+      setMealType('');
+      setDate('');
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to add meal plan recipe');
+    }
+  };
+
+  const recipeOptions = recipes.map(recipe => ({
+    value: recipe.RecipeID,
+    label: recipe.RecipeName,
+  }));
+
+  return (
+    <Modal id="add_meal_plan_recipe_modal" title="Add Meal to Meal Plan">
+      <form onSubmit={handleSubmit} className='flex gap-4 flex-col'>
+        <Select
+          label="Recipe"
+          value={recipeId}
+          onChange={(e) => setRecipeId(e.target.value)}
+          required
+          options={recipeOptions}
+          defaultOption="Select a recipe"
+        />
+        <Button type="submit">Add Meal</Button>
+      </form>
+    </Modal>
+  );
+}
+
+export default AddMealPlanRecipeModal;
+
+
+==================== client\src\components\ui\Select.jsx ====================
+
+// src/components/ui/Select.jsx
+import React from 'react';
+
+const Select = ({ label, value, onChange, required, options, defaultOption, disabled }) => {
+  return (
+    <label className="form-control">
+      <div className="label">
+        <span className="label-text">{label}</span>
+      </div>
+      <select
+        className="select select-bordered"
+        value={value}
+        onChange={onChange}
+        required={required}
+        disabled={disabled}
+      >
+        <option value="" disabled>{defaultOption}</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value} disabled={option.disabled}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+};
+
+export default Select;
+
+
+==================== client\src\components\Calendar.jsx ====================
+
+// src/components/Calendar.jsx
+import React from 'react';
+import Button from './ui/Button';
+import { format, eachDayOfInterval, parseISO } from 'date-fns';
+
+const Calendar = ({ mealPlan, mealPlanRecipes, recipes, onAddMeal, onModifyMeal }) => {
+  const days = eachDayOfInterval({
+    start: parseISO(mealPlan.StartDate),
+    end: parseISO(mealPlan.EndDate),
+  });
+
+  const getMealForDay = (date, mealType) => {
+    return mealPlanRecipes.find(
+      (mpr) => mpr.Date === format(date, 'yyyy-MM-dd') && mpr.MealType === mealType
+    );
+  };
+
+  const getRecipeName = (recipeId) => {
+    const recipe = recipes.find(r => r.RecipeID === recipeId);
+    return recipe ? recipe.RecipeName : 'Unknown Recipe';
+  };
+
+  return (
+    <div className="grid grid-cols-7 gap-4">
+      {days.map((day) => (
+        <div key={day} className="border p-2">
+          <h3 className="font-bold">{format(day, 'eee, MMM d')}</h3>
+          {['Breakfast', 'Lunch', 'Dinner'].map((mealType) => {
+            const meal = getMealForDay(day, mealType);
+            return (
+              <div key={mealType} className="my-2">
+                <h4 className="font-semibold">{mealType}</h4>
+                {meal ? (
+                  <div>
+                    <div>{getRecipeName(meal.RecipeID)}</div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        outline
+                        onClick={() => onModifyMeal(meal.MealPlanRecipeID)}
+                      >
+                        Modify
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="error"
+                        outline
+                        onClick={() => onModifyMeal(meal.MealPlanRecipeID, true)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    outline
+                    onClick={() => onAddMeal(day, mealType)}
+                  >
+                    Add {mealType}
+                  </Button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default Calendar;

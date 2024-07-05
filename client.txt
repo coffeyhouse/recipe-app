@@ -1,0 +1,3412 @@
+
+
+==================== C:\Code\recipe-app\client/src\App.css ====================
+
+
+
+==================== C:\Code\recipe-app\client/src\App.jsx ====================
+
+import React from 'react';
+import AppRoutes from './routes';
+import NavBar from './components/NavBar';
+import { useAuth } from './context/AuthContext';
+import SideBar from './components/SideBar';
+
+function App() {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <div className="flex flex-col min-h-screen">
+      <NavBar />
+      <div className="flex grow">
+        {isAuthenticated && <SideBar />}
+        <AppRoutes />
+      </div>
+    </div>
+  );
+}
+
+export default App;
+
+
+==================== C:\Code\recipe-app\client/src\index.css ====================
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+==================== C:\Code\recipe-app\client/src\main.jsx ====================
+
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+import { BrowserRouter } from 'react-router-dom';
+import App from './App';
+import './index.css';
+import { AuthProvider } from './context/AuthContext';
+import { DataProvider } from './context/DataContext';
+
+const rootElement = document.getElementById('root');
+const root = createRoot(rootElement);
+
+root.render(
+  <BrowserRouter>
+    <AuthProvider>
+      <DataProvider>
+        <App />
+      </DataProvider>
+    </AuthProvider>
+  </BrowserRouter>
+);
+
+
+==================== C:\Code\recipe-app\client/src\routes.jsx ====================
+
+// src/routes.jsx
+
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import Register from './pages/Register';
+import ManageCategories from './pages/ManageCategories';
+import ManageSubCategories from './pages/ManageSubCategories';
+import ManageIngredients from './pages/ManageIngredients';
+import ManageRecipes from './pages/ManageRecipes';
+import ManageAuthors from './pages/ManageAuthors';
+import ManageRecipeBooks from './pages/ManageRecipeBooks';
+import ManageMealPlans from './pages/ManageMealPlans';
+import PrivateRoute from './components/PrivateRoute';
+import MealPlanDetails from './pages/MealPlanDetails';
+
+import Home from './pages/Home';
+
+function AppRoutes() {
+  return (
+    <Routes>
+      <Route path="login" element={<Login />} />
+      <Route path="register" element={<Register />} />
+      <Route path="/" element={<PrivateRoute><Home /></PrivateRoute>} />
+      <Route path="/meal-plan/:mealPlanId" element={<PrivateRoute><MealPlanDetails /></PrivateRoute>} />
+      <Route path="admin">
+        <Route index element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+        <Route path="manage-categories" element={<PrivateRoute><ManageCategories /></PrivateRoute>} />
+        <Route path="manage-sub-categories" element={<PrivateRoute><ManageSubCategories /></PrivateRoute>} />
+        <Route path="manage-ingredients" element={<PrivateRoute><ManageIngredients /></PrivateRoute>} />
+        <Route path="manage-recipes" element={<PrivateRoute><ManageRecipes /></PrivateRoute>} />
+        <Route path="manage-authors" element={<PrivateRoute><ManageAuthors /></PrivateRoute>} />
+        <Route path="manage-recipe-books" element={<PrivateRoute><ManageRecipeBooks /></PrivateRoute>} />
+        <Route path="manage-meal-plans" element={<PrivateRoute><ManageMealPlans /></PrivateRoute>} />
+      </Route>
+
+    </Routes>
+  );
+}
+
+export default AppRoutes;
+
+
+==================== C:\Code\recipe-app\client/src\supabaseClient.js ====================
+
+// src/supabaseClient.js
+
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = 'https://fovbbeeexjqmcivjaujs.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvdmJiZWVleGpxbWNpdmphdWpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MTk1Nzg2NjksImV4cCI6MjAzNTE1NDY2OX0.F3M2b5cR9gKJo5muAZ45bgs8LKkf8znkMlixf7wN_88';
+
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+
+==================== C:\Code\recipe-app\client/src\assets\react.svg ====================
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--logos" width="35.93" height="32" preserveAspectRatio="xMidYMid meet" viewBox="0 0 256 228"><path fill="#00D8FF" d="M210.483 73.824a171.49 171.49 0 0 0-8.24-2.597c.465-1.9.893-3.777 1.273-5.621c6.238-30.281 2.16-54.676-11.769-62.708c-13.355-7.7-35.196.329-57.254 19.526a171.23 171.23 0 0 0-6.375 5.848a155.866 155.866 0 0 0-4.241-3.917C100.759 3.829 77.587-4.822 63.673 3.233C50.33 10.957 46.379 33.89 51.995 62.588a170.974 170.974 0 0 0 1.892 8.48c-3.28.932-6.445 1.924-9.474 2.98C17.309 83.498 0 98.307 0 113.668c0 15.865 18.582 31.778 46.812 41.427a145.52 145.52 0 0 0 6.921 2.165a167.467 167.467 0 0 0-2.01 9.138c-5.354 28.2-1.173 50.591 12.134 58.266c13.744 7.926 36.812-.22 59.273-19.855a145.567 145.567 0 0 0 5.342-4.923a168.064 168.064 0 0 0 6.92 6.314c21.758 18.722 43.246 26.282 56.54 18.586c13.731-7.949 18.194-32.003 12.4-61.268a145.016 145.016 0 0 0-1.535-6.842c1.62-.48 3.21-.974 4.76-1.488c29.348-9.723 48.443-25.443 48.443-41.52c0-15.417-17.868-30.326-45.517-39.844Zm-6.365 70.984c-1.4.463-2.836.91-4.3 1.345c-3.24-10.257-7.612-21.163-12.963-32.432c5.106-11 9.31-21.767 12.459-31.957c2.619.758 5.16 1.557 7.61 2.4c23.69 8.156 38.14 20.213 38.14 29.504c0 9.896-15.606 22.743-40.946 31.14Zm-10.514 20.834c2.562 12.94 2.927 24.64 1.23 33.787c-1.524 8.219-4.59 13.698-8.382 15.893c-8.067 4.67-25.32-1.4-43.927-17.412a156.726 156.726 0 0 1-6.437-5.87c7.214-7.889 14.423-17.06 21.459-27.246c12.376-1.098 24.068-2.894 34.671-5.345a134.17 134.17 0 0 1 1.386 6.193ZM87.276 214.515c-7.882 2.783-14.16 2.863-17.955.675c-8.075-4.657-11.432-22.636-6.853-46.752a156.923 156.923 0 0 1 1.869-8.499c10.486 2.32 22.093 3.988 34.498 4.994c7.084 9.967 14.501 19.128 21.976 27.15a134.668 134.668 0 0 1-4.877 4.492c-9.933 8.682-19.886 14.842-28.658 17.94ZM50.35 144.747c-12.483-4.267-22.792-9.812-29.858-15.863c-6.35-5.437-9.555-10.836-9.555-15.216c0-9.322 13.897-21.212 37.076-29.293c2.813-.98 5.757-1.905 8.812-2.773c3.204 10.42 7.406 21.315 12.477 32.332c-5.137 11.18-9.399 22.249-12.634 32.792a134.718 134.718 0 0 1-6.318-1.979Zm12.378-84.26c-4.811-24.587-1.616-43.134 6.425-47.789c8.564-4.958 27.502 2.111 47.463 19.835a144.318 144.318 0 0 1 3.841 3.545c-7.438 7.987-14.787 17.08-21.808 26.988c-12.04 1.116-23.565 2.908-34.161 5.309a160.342 160.342 0 0 1-1.76-7.887Zm110.427 27.268a347.8 347.8 0 0 0-7.785-12.803c8.168 1.033 15.994 2.404 23.343 4.08c-2.206 7.072-4.956 14.465-8.193 22.045a381.151 381.151 0 0 0-7.365-13.322Zm-45.032-43.861c5.044 5.465 10.096 11.566 15.065 18.186a322.04 322.04 0 0 0-30.257-.006c4.974-6.559 10.069-12.652 15.192-18.18ZM82.802 87.83a323.167 323.167 0 0 0-7.227 13.238c-3.184-7.553-5.909-14.98-8.134-22.152c7.304-1.634 15.093-2.97 23.209-3.984a321.524 321.524 0 0 0-7.848 12.897Zm8.081 65.352c-8.385-.936-16.291-2.203-23.593-3.793c2.26-7.3 5.045-14.885 8.298-22.6a321.187 321.187 0 0 0 7.257 13.246c2.594 4.48 5.28 8.868 8.038 13.147Zm37.542 31.03c-5.184-5.592-10.354-11.779-15.403-18.433c4.902.192 9.899.29 14.978.29c5.218 0 10.376-.117 15.453-.343c-4.985 6.774-10.018 12.97-15.028 18.486Zm52.198-57.817c3.422 7.8 6.306 15.345 8.596 22.52c-7.422 1.694-15.436 3.058-23.88 4.071a382.417 382.417 0 0 0 7.859-13.026a347.403 347.403 0 0 0 7.425-13.565Zm-16.898 8.101a358.557 358.557 0 0 1-12.281 19.815a329.4 329.4 0 0 1-23.444.823c-7.967 0-15.716-.248-23.178-.732a310.202 310.202 0 0 1-12.513-19.846h.001a307.41 307.41 0 0 1-10.923-20.627a310.278 310.278 0 0 1 10.89-20.637l-.001.001a307.318 307.318 0 0 1 12.413-19.761c7.613-.576 15.42-.876 23.31-.876H128c7.926 0 15.743.303 23.354.883a329.357 329.357 0 0 1 12.335 19.695a358.489 358.489 0 0 1 11.036 20.54a329.472 329.472 0 0 1-11 20.722Zm22.56-122.124c8.572 4.944 11.906 24.881 6.52 51.026c-.344 1.668-.73 3.367-1.15 5.09c-10.622-2.452-22.155-4.275-34.23-5.408c-7.034-10.017-14.323-19.124-21.64-27.008a160.789 160.789 0 0 1 5.888-5.4c18.9-16.447 36.564-22.941 44.612-18.3ZM128 90.808c12.625 0 22.86 10.235 22.86 22.86s-10.235 22.86-22.86 22.86s-22.86-10.235-22.86-22.86s10.235-22.86 22.86-22.86Z"></path></svg>
+
+==================== C:\Code\recipe-app\client/src\components\AddAuthorModal.jsx ====================
+
+// src/components/AddAuthorModal.jsx
+import React, { useState } from 'react';
+import { useData } from '../context/DataContext';
+import Button from './ui/Button';
+import TextInput from './ui/TextInput';
+import Modal from './ui/Modal';
+
+function AddAuthorModal() {
+  const [authorName, setAuthorName] = useState('');
+  const [authorImageURL, setAuthorImageURL] = useState('');
+  const { createAuthor } = useData();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await createAuthor(authorName, authorImageURL);
+      document.getElementById('add_author_modal').close();
+    } catch (error) {
+      alert('Failed to add author');
+    }
+  };
+
+  return (
+    <Modal id="add_author_modal" title="Add Author">
+      <form onSubmit={handleSubmit} className='flex gap-4 flex-col'>
+        <TextInput
+          label="Author Name"
+          value={authorName}
+          onChange={(e) => setAuthorName(e.target.value)}
+          required
+        />
+        <TextInput
+          label="Author Image URL"
+          value={authorImageURL}
+          onChange={(e) => setAuthorImageURL(e.target.value)}
+        />
+        <Button>Add Author</Button>
+      </form>
+    </Modal>
+  );
+}
+
+export default AddAuthorModal;
+
+
+==================== C:\Code\recipe-app\client/src\components\AddCategoryModal.jsx ====================
+
+// src/components/AddCategoryModal.jsx
+import React, { useState } from 'react';
+import { useData } from '../context/DataContext';
+import TextInput from './ui/TextInput';
+import Modal from './ui/Modal';
+import Button from './ui/Button';
+
+function AddCategoryModal() {
+  const [categoryName, setCategoryName] = useState('');
+  const { createCategory } = useData();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await createCategory(categoryName);
+      document.getElementById('add_category_modal').close();
+    } catch (error) {
+      alert('Failed to add category');
+    }
+  };
+
+  return (
+    <Modal id="add_category_modal" title="Add Category">
+      <form onSubmit={handleSubmit} className='flex gap-4 flex-col'>
+        <TextInput
+          label="Category Name"
+          value={categoryName}
+          onChange={(e) => setCategoryName(e.target.value)}
+          required
+        />
+        <Button>Add Category</Button>
+      </form>
+    </Modal>
+  );
+}
+
+export default AddCategoryModal;
+
+
+==================== C:\Code\recipe-app\client/src\components\AddIngredientModal.jsx ====================
+
+import React, { useState, useEffect } from 'react';
+import { useData } from '../context/DataContext';
+import TextInput from './ui/TextInput';
+import Modal from './ui/Modal';
+import Select from './ui/Select';
+import Button from './ui/Button';
+
+function AddIngredientModal({ onIngredientAdded = () => {} }) {
+  const [ingredientName, setIngredientName] = useState('');
+  const [purchaseWeightVolume, setPurchaseWeightVolume] = useState('');
+  const [purchaseUnitId, setPurchaseUnitId] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [subCategoryId, setSubCategoryId] = useState('');
+  const [purchaseWeightUnitId, setPurchaseWeightUnitId] = useState('');
+
+  const { categories, subCategories, units, createIngredient } = useData();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const ingredient = {
+      IngredientName: ingredientName,
+      PurchaseWeightVolume: purchaseWeightVolume,
+      PurchaseUnitID: purchaseUnitId,
+      SubCategoryID: subCategoryId,
+      PurchaseWeightUnitID: purchaseWeightUnitId,
+    };
+
+    try {
+      const newIngredient = await createIngredient(ingredient);
+      onIngredientAdded(newIngredient);
+      document.getElementById('add_ingredient_modal').close();
+    } catch (error) {
+      alert('Failed to add ingredient');
+    }
+  };
+
+  const filteredSubCategories = subCategories.filter(
+    (subCategory) => subCategory.CategoryID === parseInt(categoryId)
+  );
+
+  const unitOptions = units.map((unit) => ({
+    value: unit.UnitID,
+    label: unit.UnitName,
+  }));
+
+  const categoryOptions = categories.map((category) => ({
+    value: category.CategoryID,
+    label: category.CategoryName,
+  }));
+
+  const subCategoryOptions = filteredSubCategories.map((subCategory) => ({
+    value: subCategory.SubCategoryID,
+    label: subCategory.SubCategoryName,
+  }));
+
+  return (
+    <Modal id="add_ingredient_modal" title="Add Ingredient" className="modal modal-bottom sm:modal-middle">
+      <form onSubmit={handleSubmit} className="flex gap-4 flex-col">
+        <TextInput
+          label="Ingredient Name"
+          value={ingredientName}
+          onChange={(e) => setIngredientName(e.target.value)}
+          required
+        />
+        <TextInput
+          label="Purchase Weight Volume"
+          value={purchaseWeightVolume}
+          onChange={(e) => setPurchaseWeightVolume(e.target.value)}
+          required
+        />
+        <Select
+          label="Purchase Unit"
+          value={purchaseUnitId}
+          onChange={(e) => setPurchaseUnitId(e.target.value)}
+          required
+          options={unitOptions}
+          defaultOption="Select a unit"
+        />
+        <Select
+          label="Category"
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          required
+          options={categoryOptions}
+          defaultOption="Select a category"
+        />
+        <Select
+          label="Sub-Category"
+          value={subCategoryId}
+          onChange={(e) => setSubCategoryId(e.target.value)}
+          required
+          options={subCategoryOptions}
+          defaultOption="Select a sub-category"
+          disabled={!categoryId} // Disable until a category is selected
+        />
+        <Select
+          label="Purchase Weight Unit"
+          value={purchaseWeightUnitId}
+          onChange={(e) => setPurchaseWeightUnitId(e.target.value)}
+          required
+          options={unitOptions}
+          defaultOption="Select a unit"
+        />
+        <Button>Add Ingredient</Button>
+      </form>
+    </Modal>
+  );
+}
+
+export default AddIngredientModal;
+
+
+==================== C:\Code\recipe-app\client/src\components\AddMealPlanModal.jsx ====================
+
+// src/components/AddMealPlanModal.jsx
+
+import React, { useState } from 'react';
+import { useData } from '../context/DataContext';
+import Modal from './ui/Modal';
+import Button from './ui/Button';
+import TextInput from './ui/TextInput';
+
+function AddMealPlanModal() {
+  const [planName, setPlanName] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const { createMealPlan } = useData();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const mealPlan = {
+      PlanName: planName,
+      StartDate: startDate,
+      EndDate: endDate,
+      UserID: 1, // Adjust as needed
+    };
+
+    try {
+      await createMealPlan(mealPlan);
+      document.getElementById('add_meal_plan_modal').close();
+    } catch (error) {
+      alert('Failed to add meal plan');
+    }
+  };
+
+  return (
+    <Modal id="add_meal_plan_modal" title="Add Meal Plan">
+      <form onSubmit={handleSubmit} className='flex gap-4 flex-col'>
+        <TextInput
+          label="Plan Name"
+          value={planName}
+          onChange={(e) => setPlanName(e.target.value)}
+          required
+        />
+        <TextInput
+          label="Start Date"
+          type="date"
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          required
+        />
+        <TextInput
+          label="End Date"
+          type="date"
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          required
+        />
+        <Button>Add Meal Plan</Button>
+      </form>
+    </Modal>
+  );
+}
+
+export default AddMealPlanModal;
+
+
+==================== C:\Code\recipe-app\client/src\components\AddMealPlanRecipeModal.jsx ====================
+
+import React, { useState, useEffect } from 'react';
+import { useData } from '../context/DataContext';
+import Modal from './ui/Modal';
+import Button from './ui/Button';
+import Select from './ui/Select';
+import { format, isValid } from 'date-fns';
+import TextInput from './ui/TextInput';
+
+function AddMealPlanRecipeModal({ mealPlanId, defaultDate, defaultMealType, defaultRecipeId, mealPlanRecipeId }) {
+
+  const [recipeId, setRecipeId] = useState('');
+  const [date, setDate] = useState(defaultDate && isValid(new Date(defaultDate)) ? format(new Date(defaultDate), 'yyyy-MM-dd') : '');
+  const [mealType, setMealType] = useState(defaultMealType || '');
+  const [currentMealPlanRecipeId, setCurrentMealPlanRecipeId] = useState(mealPlanRecipeId);
+
+  const { recipes, createMealPlanRecipe, updateMealPlanRecipe } = useData();
+
+  useEffect(() => {
+    setDate(defaultDate && isValid(new Date(defaultDate)) ? format(new Date(defaultDate), 'yyyy-MM-dd') : '');
+    setMealType(defaultMealType || '');
+    setRecipeId(defaultRecipeId || '');
+    setCurrentMealPlanRecipeId(mealPlanRecipeId || '');
+  }, [defaultDate, defaultMealType, defaultRecipeId, mealPlanRecipeId]);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!mealPlanId || !recipeId || !mealType || !date) {
+      alert('All fields are required.');
+      return;
+    }
+
+    const mealPlanRecipe = {
+      MealPlanID: mealPlanId,
+      RecipeID: recipeId,
+      MealType: mealType,
+      Date: date,
+    };
+
+    console.log("Submitting mealPlanRecipeId:", currentMealPlanRecipeId);
+
+    try {
+      if (currentMealPlanRecipeId) {
+        // Update the existing meal plan recipe
+        await updateMealPlanRecipe(currentMealPlanRecipeId, mealPlanRecipe);
+      } else {
+        // Create a new meal plan recipe
+        await createMealPlanRecipe(mealPlanRecipe);
+      }
+      document.getElementById('add_meal_plan_recipe_modal').close();
+      setRecipeId('');
+      setMealType('');
+      setDate('');
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to add/update meal plan recipe');
+    }
+  };
+
+  const recipeOptions = recipes.map(recipe => ({
+    value: recipe.RecipeID,
+    label: recipe.RecipeName,
+  }));
+
+  return (
+    <Modal id="add_meal_plan_recipe_modal" title="Add/Update Meal in Meal Plan">
+      <form onSubmit={handleSubmit} className='flex gap-4 flex-col'>
+        <Select
+          label="Recipe"
+          value={recipeId}
+          onChange={(e) => setRecipeId(e.target.value)}
+          required
+          options={recipeOptions}
+          defaultOption="Select a recipe"
+        />
+        <TextInput
+          label="Date"
+          type="date"
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          required
+        />
+        <Select
+          label="Meal Type"
+          value={mealType}
+          onChange={(e) => setMealType(e.target.value)}
+          required
+          options={[
+            { value: 'Breakfast', label: 'Breakfast' },
+            { value: 'Lunch', label: 'Lunch' },
+            { value: 'Dinner', label: 'Dinner' }
+          ]}
+          defaultOption="Select a meal type"
+        />
+        <Button type="submit">{currentMealPlanRecipeId ? 'Update Meal' : 'Add Meal'}</Button>
+      </form>
+    </Modal>
+  );
+}
+
+export default AddMealPlanRecipeModal;
+
+
+==================== C:\Code\recipe-app\client/src\components\AddRecipeBookModal.jsx ====================
+
+import React, { useState } from 'react';
+import { useData } from '../context/DataContext';
+import Modal from './ui/Modal';
+import Button from './ui/Button';
+import TextInput from './ui/TextInput';
+import Select from './ui/Select';
+
+function AddRecipeBookModal() {
+  const [bookName, setBookName] = useState('');
+  const [authorID, setAuthorID] = useState('');
+  const [coverArtURL, setCoverArtURL] = useState('');
+
+  const { authors, createRecipeBook } = useData();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const recipeBook = {
+      AuthorID: authorID,
+      BookName: bookName,
+      CoverArtURL: coverArtURL
+    };
+
+    try {
+      await createRecipeBook(recipeBook);
+      document.getElementById('add_recipe_book_modal').close();
+    } catch (error) {
+      alert('Failed to add book');
+    }
+  };
+
+  const authorOptions = authors.map(author => ({
+    value: author.AuthorID,
+    label: author.AuthorName,
+  }));
+
+  return (
+    <Modal id="add_recipe_book_modal" title="Add Recipe Book">
+      <form onSubmit={handleSubmit} className='flex gap-4 flex-col'>
+        <TextInput
+          label="Book Name"
+          value={bookName}
+          onChange={(e) => setBookName(e.target.value)}
+          required
+        />
+        <Select
+          label="Author"
+          value={authorID}
+          onChange={(e) => setAuthorID(e.target.value)}
+          required
+          options={authorOptions}
+          defaultOption="Select an author"
+        />
+        <TextInput
+          label="Cover Art URL"
+          value={coverArtURL}
+          onChange={(e) => setCoverArtURL(e.target.value)}
+        />
+        <Button>Add Book</Button>
+      </form>
+    </Modal>
+  );
+}
+
+export default AddRecipeBookModal;
+
+
+==================== C:\Code\recipe-app\client/src\components\AddRecipeIngredientModal.jsx ====================
+
+import React, { useState, useEffect } from 'react';
+import Fuse from 'fuse.js';
+import { useData } from '../context/DataContext';
+import AddIngredientModal from './AddIngredientModal';
+import Table from './ui/Table';
+import Button from './ui/Button';
+import Modal from './ui/Modal';
+import TextInput from './ui/TextInput';
+import Select from './ui/Select';
+
+function AddRecipeIngredientModal({ recipeId }) {
+  const [selectedIngredientId, setSelectedIngredientId] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [selectedUnitId, setSelectedUnitId] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredIngredients, setFilteredIngredients] = useState([]);
+  const [defaultUnitId, setDefaultUnitId] = useState('');
+
+  const { ingredients, units, categories, subCategories, createRecipeIngredient } = useData();
+
+  useEffect(() => {
+    if (ingredients.length && categories.length && subCategories.length) {
+      const updatedIngredients = ingredients.map((ingredient) => {
+        const subCategory = subCategories.find(
+          (sub) => sub.SubCategoryID === ingredient.SubCategoryID
+        );
+        const category = subCategory
+          ? categories.find((cat) => cat.CategoryID === subCategory.CategoryID)
+          : null;
+
+        return {
+          ...ingredient,
+          CategoryName: category ? category.CategoryName : '',
+          SubCategoryName: subCategory ? subCategory.SubCategoryName : '',
+        };
+      });
+      setFilteredIngredients(updatedIngredients);
+    }
+  }, [ingredients, categories, subCategories]);
+
+  const handleSearch = (e) => {
+    const term = e.target.value;
+    setSearchTerm(term);
+
+    if (term === '') {
+      setFilteredIngredients(ingredients.map((ingredient) => {
+        const subCategory = subCategories.find(
+          (sub) => sub.SubCategoryID === ingredient.SubCategoryID
+        );
+        const category = subCategory
+          ? categories.find((cat) => cat.CategoryID === subCategory.CategoryID)
+          : null;
+
+        return {
+          ...ingredient,
+          CategoryName: category ? category.CategoryName : '',
+          SubCategoryName: subCategory ? subCategory.SubCategoryName : '',
+        };
+      }));
+    } else {
+      const fuse = new Fuse(filteredIngredients, {
+        keys: ['IngredientName', 'CategoryName', 'SubCategoryName'],
+        threshold: 0.3, // Adjust the threshold as needed
+      });
+
+      const result = fuse.search(term);
+      setFilteredIngredients(result.map((r) => r.item));
+    }
+  };
+
+  const handleAddClick = (ingredientId) => {
+    const ingredient = ingredients.find((ing) => ing.IngredientID === ingredientId);
+    if (ingredient) {
+      setSelectedIngredientId(ingredientId);
+      setDefaultUnitId(ingredient.PurchaseUnitID || ''); // Handle missing PurchaseUnitID
+      setSelectedUnitId(ingredient.PurchaseUnitID || ''); // Set the default unit id
+      document.getElementById('quantity_unit_modal').showModal();
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const data = {
+      RecipeID: recipeId,
+      IngredientID: selectedIngredientId,
+      Quantity: parseFloat(quantity),
+      UnitID: selectedUnitId || defaultUnitId,
+    };
+
+    try {
+      await createRecipeIngredient(data);
+      window.location.reload(); // Refresh the page to show the new ingredient
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to add ingredient');
+    }
+  };
+
+  const handleAddNewIngredient = () => {
+    document.getElementById('add_ingredient_modal').showModal();
+  };
+
+  const handleNewIngredientAdded = (newIngredient) => {
+    if (newIngredient && newIngredient.PurchaseUnitID) {
+      setFilteredIngredients((prevIngredients) => [
+        ...prevIngredients,
+        {
+          ...newIngredient,
+          CategoryName: '',
+          SubCategoryName: '',
+        },
+      ]);
+
+      // Automatically select the newly added ingredient and open the quantity/unit modal
+      setSelectedIngredientId(newIngredient.IngredientID);
+      setDefaultUnitId(newIngredient.PurchaseUnitID);
+      setSelectedUnitId(newIngredient.PurchaseUnitID);
+      setQuantity(''); // Reset the quantity
+      document.getElementById('quantity_unit_modal').showModal();
+    } else {
+      alert('New ingredient does not have a PurchaseUnitID');
+    }
+  };
+
+  const headers = ['Ingredient', 'Category', 'Sub-Category', 'Action'];
+  const data = filteredIngredients.map((ingredient) => ({
+    id: ingredient.IngredientID,
+    cells: [
+      ingredient.IngredientName,
+      ingredient.CategoryName,
+      ingredient.SubCategoryName,
+      <Button
+        size="sm"
+        variant="primary"
+        outline={true}
+        onClick={() => handleAddClick(ingredient.IngredientID)}
+      >
+        Add
+      </Button>
+    ],
+  }));
+
+  const unitOptions = units.map(unit => ({
+    value: unit.UnitID,
+    label: unit.UnitName,
+  }));
+
+  return (
+    <div>
+      <Modal id="add_recipe_ingredient_modal" title="Add Ingredient to Recipe" wide={true}>
+        <div className='flex flex-col gap-4 mb-8'>
+          <TextInput
+            label="Search Ingredient"
+            value={searchTerm}
+            onChange={handleSearch}
+            placeholder="Type to search ingredients..."
+          />
+
+          <Button
+            outline={true}
+            size='sm'
+            onClick={handleAddNewIngredient}
+          >Add New Ingredient</Button>
+        </div>
+        <Table headers={headers} data={data} />
+      </Modal>
+
+      <Modal id="quantity_unit_modal" title="Enter Quantity and Unit">
+        <form onSubmit={handleSubmit} className="flex gap-4 flex-col mt-4">
+          <TextInput
+            label="Quantity"
+            value={quantity}
+            onChange={(e) => setQuantity(e.target.value)}
+            required
+          />
+
+          <Select
+            label="Unit"
+            value={selectedUnitId || defaultUnitId}
+            onChange={(e) => setSelectedUnitId(e.target.value)}
+            required
+            options={unitOptions}
+            defaultOption="Select a unit"
+          />
+          <Button>Add Ingredient</Button>
+        </form>
+      </Modal>
+
+      <AddIngredientModal onIngredientAdded={handleNewIngredientAdded} />
+    </div>
+  );
+}
+
+export default AddRecipeIngredientModal;
+
+
+==================== C:\Code\recipe-app\client/src\components\AddRecipeModal.jsx ====================
+
+import React, { useState, useEffect } from 'react';
+import { useData } from '../context/DataContext';
+import Modal from './ui/Modal';
+import Button from './ui/Button';
+import TextInput from './ui/TextInput';
+import Select from './ui/Select';
+
+function AddRecipeModal() {
+    const [recipeName, setRecipeName] = useState('');
+    const [authorID, setAuthorID] = useState('');
+    const [bookID, setBookID] = useState('');
+    const [pageNumber, setPageNumber] = useState('');
+    const [onlineURL, setOnlineURL] = useState('');
+    const [cookTime, setCookTime] = useState('');
+    const [difficulty, setDifficulty] = useState('');
+    const [type, setType] = useState('');
+    const [imageURL, setImageURL] = useState('');
+    const [servings, setServings] = useState('');
+    const [cuisine, setCuisine] = useState('');
+    const [filteredBooks, setFilteredBooks] = useState([]);
+
+    const { authors, recipeBooks, createRecipe } = useData();
+
+    useEffect(() => {
+        if (authorID) {
+            setFilteredBooks(recipeBooks.filter(book => book.AuthorID === parseInt(authorID)));
+        } else {
+            setFilteredBooks([]);
+        }
+    }, [authorID, recipeBooks]);
+
+    const handleAuthorChange = (e) => {
+        setAuthorID(e.target.value);
+        setBookID(''); // Reset book selection when author changes
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+
+        const recipe = {
+            RecipeName: recipeName,
+            AuthorID: parseInt(authorID) || null,
+            BookID: parseInt(bookID) || null,
+            PageNumber: parseInt(pageNumber) || null,
+            OnlineURL: onlineURL,
+            CookTime: parseInt(cookTime) || null,
+            Difficulty: difficulty,
+            Type: type,
+            ImageURL: imageURL,
+            Servings: parseInt(servings) || null,
+            Cuisine: cuisine,
+        };
+
+        try {
+            await createRecipe(recipe);
+            document.getElementById('add_recipe_modal').close();
+        } catch (error) {
+            alert('Failed to add recipe');
+        }
+    };
+
+    const authorOptions = authors.map(author => ({
+        value: author.AuthorID,
+        label: author.AuthorName
+    }));
+
+    const bookOptions = filteredBooks.map(book => ({
+        value: book.BookID,
+        label: book.BookName
+    }));
+
+    return (
+        <Modal id="add_recipe_modal" title="Add Recipe">
+            <form onSubmit={handleSubmit} className="flex gap-4 flex-col">
+                <TextInput
+                    label="Recipe Name"
+                    value={recipeName}
+                    onChange={(e) => setRecipeName(e.target.value)}
+                    required
+                />
+                <Select
+                    label="Author"
+                    value={authorID}
+                    onChange={handleAuthorChange}
+                    options={authorOptions}
+                    defaultOption="Select an author"
+                />
+                <Select
+                    label="Book"
+                    value={bookID}
+                    onChange={(e) => setBookID(e.target.value)}
+                    options={bookOptions}
+                    defaultOption="Select a book"
+                    disabled={!authorID}
+                />
+                <TextInput
+                    label="Page Number"
+                    type="number"
+                    value={pageNumber}
+                    onChange={(e) => setPageNumber(e.target.value)}
+                    disabled={!bookID}
+                />
+                <TextInput
+                    label="Online URL"
+                    type="url"
+                    value={onlineURL}
+                    onChange={(e) => setOnlineURL(e.target.value)}
+                />
+                <TextInput
+                    label="Cook Time (minutes)"
+                    type="number"
+                    value={cookTime}
+                    onChange={(e) => setCookTime(e.target.value)}
+                    required
+                />
+                <TextInput
+                    label="Difficulty"
+                    value={difficulty}
+                    onChange={(e) => setDifficulty(e.target.value)}
+                />
+                <TextInput
+                    label="Type"
+                    value={type}
+                    onChange={(e) => setType(e.target.value)}
+                />
+                <TextInput
+                    label="Image URL"
+                    type="url"
+                    value={imageURL}
+                    onChange={(e) => setImageURL(e.target.value)}
+                />
+                <TextInput
+                    label="Servings"
+                    type="number"
+                    value={servings}
+                    onChange={(e) => setServings(e.target.value)}
+                    required
+                />
+                <TextInput
+                    label="Cuisine"
+                    value={cuisine}
+                    onChange={(e) => setCuisine(e.target.value)}
+                />
+                <Button>Add Recipe</Button>
+            </form>
+        </Modal>
+    );
+}
+
+export default AddRecipeModal;
+
+
+==================== C:\Code\recipe-app\client/src\components\AddSubCategoryModal.jsx ====================
+
+import React, { useState } from 'react';
+import { useData } from '../context/DataContext';
+import Modal from './ui/Modal';
+import Button from './ui/Button';
+import TextInput from './ui/TextInput';
+import Select from './ui/Select';
+
+function AddSubCategoryModal() {
+  const [subCategoryName, setSubCategoryName] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const { categories, createSubCategory } = useData();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const subCategory = {
+      SubCategoryName: subCategoryName,
+      CategoryID: categoryId,
+    };
+
+    try {
+      await createSubCategory(subCategory);
+      document.getElementById('add_sub_category_modal').close();
+    } catch (error) {
+      console.error('Error adding sub-category:', error);
+      alert('Failed to add sub-category');
+    }
+  };
+
+  const categoryOptions = categories.map((category) => ({
+    value: category.CategoryID,
+    label: category.CategoryName,
+  }));
+
+  return (
+    <Modal id="add_sub_category_modal" title="Add Sub-Category">
+      <form onSubmit={handleSubmit} className="flex gap-4 flex-col">
+        <TextInput
+          label="Sub-Category Name"
+          value={subCategoryName}
+          onChange={(e) => setSubCategoryName(e.target.value)}
+          required
+        />        
+        <Select
+          label="Category"
+          value={categoryId}
+          onChange={(e) => setCategoryId(e.target.value)}
+          required
+          options={categoryOptions}
+          defaultOption="Select a category"
+        />
+        <Button>Add Sub-Category</Button>
+      </form>
+    </Modal>
+  );
+}
+
+export default AddSubCategoryModal;
+
+
+==================== C:\Code\recipe-app\client/src\components\AuthorTable.jsx ====================
+
+// src/components/AuthorTable.jsx
+import React from 'react';
+import { useData } from '../context/DataContext';
+import Button from './ui/Button';
+import Table from './ui/Table';
+import DeleteButton from './ui/DeleteButton';
+
+function AuthorTable() {
+  const { authors, deleteAuthor } = useData();
+
+  const handleDelete = async (authorId) => {
+    if (window.confirm('Are you sure you want to delete this author?')) {
+      await deleteAuthor(authorId);
+    }
+  };
+
+  const headers = ['#', 'Author Name', 'Actions'];
+
+  const data = authors.map((author, index) => ({
+    id: author.AuthorID,
+    cells: [
+      index + 1,
+      author.AuthorName,
+      <DeleteButton onClick={() => handleDelete(author.AuthorID)} />      
+    ],
+  }));
+
+  return (
+    <>
+      <Table headers={headers} data={data} />
+    </>
+  );
+}
+
+export default AuthorTable;
+
+
+==================== C:\Code\recipe-app\client/src\components\Calendar.jsx ====================
+
+// src/components/Calendar.jsx
+import React from 'react';
+import Button from './ui/Button';
+import { format, eachDayOfInterval, parseISO } from 'date-fns';
+
+const Calendar = ({ mealPlan, mealPlanRecipes, recipes, onAddMeal, onModifyMeal }) => {
+  const days = eachDayOfInterval({
+    start: parseISO(mealPlan.StartDate),
+    end: parseISO(mealPlan.EndDate),
+  });
+
+  const getMealForDay = (date, mealType) => {
+    return mealPlanRecipes.find(
+      (mpr) => mpr.Date === format(date, 'yyyy-MM-dd') && mpr.MealType === mealType
+    );
+  };
+
+  const getRecipeName = (recipeId) => {
+    const recipe = recipes.find(r => r.RecipeID === recipeId);
+    return recipe ? recipe.RecipeName : 'Unknown Recipe';
+  };
+
+  return (
+    <div className="grid grid-cols-1 gap-4">
+      {days.map((day) => (
+        <div key={day} className="border p-2">
+          <h3 className="font-bold">{format(day, 'eee, MMM d')}</h3>
+          {['Breakfast', 'Lunch', 'Dinner'].map((mealType) => {
+            const meal = getMealForDay(day, mealType);
+            return (
+              <div key={mealType} className="my-2">
+                <h4 className="font-semibold">{mealType}</h4>
+                {meal ? (
+                  <div>
+                    <div>{getRecipeName(meal.RecipeID)}</div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        outline
+                        onClick={() => onModifyMeal(meal.MealPlanRecipeID)}
+                      >
+                        Modify
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="error"
+                        outline
+                        onClick={() => onModifyMeal(meal.MealPlanRecipeID, true)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="secondary"
+                    outline
+                    onClick={() => onAddMeal(day, mealType)}
+                  >
+                    Add {mealType}
+                  </Button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+export default Calendar;
+
+
+==================== C:\Code\recipe-app\client/src\components\CategoryTable.jsx ====================
+
+// src/components/CategoryTable.jsx
+import React from 'react';
+import { useData } from '../context/DataContext';
+import Table from './ui/Table';
+import Button from './ui/Button';
+import DeleteButton from './ui/DeleteButton';
+
+function CategoryTable() {
+  const { categories, subCategories, deleteCategory } = useData();
+
+  const handleDelete = async (categoryId) => {
+    if (window.confirm('Are you sure you want to delete this category?')) {
+      await deleteCategory(categoryId);
+    }
+  };
+
+  const headers = ['ID', 'Category Name', 'Sub-Categories', 'Actions'];
+
+  const data = categories.map((category, index) => {
+    const categorySubCategories = subCategories.filter(sub => sub.CategoryID === category.CategoryID).map(sub => sub.SubCategoryName).join(', ');
+
+    return {
+      id: category.CategoryID,
+      cells: [
+        category.CategoryID,
+        category.CategoryName,
+        categorySubCategories || 'None',
+        <DeleteButton onClick={() => handleDelete(category.CategoryID)} />
+      ],
+    };
+  });
+
+  return (
+    <>
+      <Table headers={headers} data={data} />
+    </>
+  );
+}
+
+export default CategoryTable;
+
+
+==================== C:\Code\recipe-app\client/src\components\IngredientTable.jsx ====================
+
+// src/components/IngredientTable.jsx
+import React from 'react';
+import { useData } from '../context/DataContext';
+import Table from './ui/Table';
+import Button from './ui/Button';
+import DeleteButton from './ui/DeleteButton';
+
+function IngredientTable() {
+  const { ingredients, categories, subCategories, units, deleteIngredient } = useData();
+
+  const handleDelete = async (ingredientId) => {
+    if (window.confirm('Are you sure you want to delete this ingredient?')) {
+      try {
+        await deleteIngredient(ingredientId);
+      } catch (error) {
+        alert('Failed to delete ingredient');
+      }
+    }
+  };
+
+  const getSubCategoryName = (subCategoryId) => {
+    const subCategory = subCategories.find(subCategory => subCategory.SubCategoryID === subCategoryId);
+    return subCategory ? subCategory.SubCategoryName : 'Unknown';
+  };
+
+  const getCategoryName = (subCategoryId) => {
+    const subCategory = subCategories.find(subCategory => subCategory.SubCategoryID === subCategoryId);
+    if (subCategory) {
+      const category = categories.find(category => category.CategoryID === subCategory.CategoryID);
+      return category ? category.CategoryName : 'Unknown';
+    }
+    return 'Unknown';
+  };
+
+  const getUnitName = (unitId) => {
+    const unit = units.find(unit => unit.UnitID === unitId);
+    return unit ? unit.UnitName : 'Unknown';
+  };
+
+  const headers = ['ID', 'Ingredient Name', 'Purchase Weight Volume', 'Purchase Unit', 'Category', 'Subcategory', 'Purchase Weight Unit', 'Actions'];
+
+  const data = ingredients.map((ingredient) => ({
+    id: ingredient.IngredientID,
+    cells: [
+      ingredient.IngredientID,
+      ingredient.IngredientName,
+      ingredient.PurchaseWeightVolume,
+      getUnitName(ingredient.PurchaseUnitID),
+      getCategoryName(ingredient.SubCategoryID),
+      getSubCategoryName(ingredient.SubCategoryID),
+      getUnitName(ingredient.PurchaseWeightUnitID),
+      <DeleteButton onClick={() => handleDelete(ingredient.IngredientID)} />
+    ],
+  }));
+
+  return (
+    <>
+      <Table headers={headers} data={data} />
+    </>
+  );
+}
+
+export default IngredientTable;
+
+
+==================== C:\Code\recipe-app\client/src\components\MealPlanRecipeTable.jsx ====================
+
+// src/components/MealPlanRecipeTable.jsx
+
+import React from 'react';
+import { useData } from '../context/DataContext';
+import DeleteButton from './ui/DeleteButton';
+import Table from './ui/Table';
+import Button from './ui/Button';
+
+function MealPlanRecipeTable({ mealPlanId }) {
+    const { mealPlanRecipes, recipes, deleteMealPlanRecipe } = useData();
+
+    const handleDelete = async (mealPlanRecipeId) => {
+        if (window.confirm('Are you sure you want to delete this meal?')) {
+            try {
+                await deleteMealPlanRecipe(mealPlanRecipeId);
+            } catch (error) {
+                alert('Failed to delete meal');
+            }
+        }
+    };
+
+    const getRecipeName = (recipeId) => {
+        const recipe = recipes.find(recipe => recipe.RecipeID === recipeId);
+        return recipe ? recipe.RecipeName : 'Unknown';
+    };
+
+    const headers = ['ID', 'Recipe', 'Meal Type', 'Date', 'Actions'];
+
+    const data = mealPlanRecipes
+        .filter(mpr => mpr.MealPlanID === mealPlanId)
+        .map((mealPlanRecipe) => ({
+            id: mealPlanRecipe.MealPlanRecipeID,
+            cells: [
+                mealPlanRecipe.MealPlanRecipeID,
+                getRecipeName(mealPlanRecipe.RecipeID),
+                mealPlanRecipe.MealType,
+                mealPlanRecipe.Date,
+                <DeleteButton onClick={() => handleDelete(mealPlanRecipe.MealPlanRecipeID)} />,
+            ],
+        }));
+
+    function handleAddClick() {
+        document.getElementById('add_meal_plan_recipe_modal').showModal();
+    }
+
+    return (
+        <div className="overflow-x-auto">
+            <Button size='sm' outline={true} variant='secondary' onClick={handleAddClick}>Add meal</Button>
+            <Table headers={headers} data={data} />
+        </div>
+    );
+}
+
+export default MealPlanRecipeTable;
+
+
+==================== C:\Code\recipe-app\client/src\components\MealPlanTable.jsx ====================
+
+import React from 'react';
+import { useData } from '../context/DataContext';
+import DeleteButton from './ui/DeleteButton';
+import Table from './ui/Table';
+import Button from './ui/Button';
+
+function MealPlanTable({ onManageMeals }) {
+  const { mealPlans, deleteMealPlan } = useData();
+
+  const handleDelete = async (mealPlanId) => {
+    if (window.confirm('Are you sure you want to delete this meal plan?')) {
+      try {
+        await deleteMealPlan(mealPlanId);
+      } catch (error) {
+        alert('Failed to delete meal plan');
+      }
+    }
+  };
+
+  const headers = ['ID', 'Plan Name', 'Start Date', 'End Date', 'Actions'];
+
+  const data = mealPlans.map((mealPlan) => ({
+    id: mealPlan.MealPlanID,
+    cells: [
+      mealPlan.MealPlanID,
+      mealPlan.PlanName,
+      mealPlan.StartDate,
+      mealPlan.EndDate,
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          variant="primary"
+          outline={true}
+          onClick={() => onManageMeals(mealPlan)}
+        >
+          Manage Meals
+        </Button>
+        <DeleteButton onClick={() => handleDelete(mealPlan.MealPlanID)} />
+      </div>
+    ],
+  }));
+
+  return (
+    <div className="overflow-x-auto">
+      <Table headers={headers} data={data} />
+    </div>
+  );
+}
+
+export default MealPlanTable;
+
+
+==================== C:\Code\recipe-app\client/src\components\NavBar.jsx ====================
+
+// src/components/NavBar.jsx
+import React from 'react';
+import { Link } from 'react-router-dom';
+import ThemeSwitcher from './ThemeSwitcher';
+import { useAuth } from '../context/AuthContext';
+
+const NavBar = () => {
+  const { isAuthenticated, logout } = useAuth();
+
+  return (
+    <nav className="navbar justify-between bg-base-300">
+      <a className="btn btn-ghost text-lg">
+        <img alt="Logo" src="../vite.svg" className="w-4" />
+        Recipe App
+      </a>
+      <div className="dropdown dropdown-end sm:hidden">
+        <button className="btn btn-ghost">
+          <i className="fa-solid fa-bars text-lg"></i>
+        </button>
+
+        <ul tabIndex="0" className="dropdown-content menu z-[1] bg-base-200 p-6 rounded-box shadow w-56 gap-2">
+          <li><a>About</a></li>
+          <li><a>Pricing</a></li>
+          <li><a>Blog</a></li>
+          <li><a>Contact</a></li>
+          <a className="btn btn-sm btn-primary">Log in</a>
+        </ul>
+      </div>
+      <div className="hidden sm:flex gap-2">
+        <ThemeSwitcher />       
+        {isAuthenticated ? (
+          <button
+            onClick={logout}
+            className="btn btn-primary btn-sm"
+          >
+            Logout
+          </button>
+        ) : (
+          <>
+            <Link to="/register" className="btn btn-ghost btn-sm">Register</Link>
+            <Link to="/login" className="btn btn-primary btn-sm">Login</Link>
+          </>
+        )}
+      </div>
+    </nav>
+  );
+};
+
+export default NavBar;
+
+
+==================== C:\Code\recipe-app\client/src\components\PrivateRoute.jsx ====================
+
+import React from 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import SideBar from './SideBar';
+
+const PrivateRoute = ({ children }) => {
+  const { isAuthenticated } = useAuth();
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />;
+  }
+
+  return (
+    <div className="flex grow">     
+      <div className="flex flex-col px-8 py-6 grow">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+export default PrivateRoute;
+
+
+==================== C:\Code\recipe-app\client/src\components\RecipeBookTable.jsx ====================
+
+// src/components/RecipeBookTable.jsx
+import React, { useMemo } from 'react';
+import { useData } from '../context/DataContext';
+import DeleteButton from './ui/DeleteButton';
+import Table from './ui/Table';
+
+function RecipeBookTable() {
+  const { recipeBooks, authors, deleteRecipeBook } = useData();
+
+  const handleDelete = async (bookId) => {
+    if (window.confirm('Are you sure you want to delete this book?')) {
+      try {
+        await deleteRecipeBook(bookId);
+      } catch (error) {
+        alert('Failed to delete book');
+      }
+    }
+  };
+
+  const getAuthorName = (authorId) => {
+    const author = authors.find(author => author.AuthorID === authorId);
+    return author ? author.AuthorName : 'Unknown';
+  };
+
+  const headers = ['#', 'Book Name', 'Author Name', 'Actions'];
+
+  const data = useMemo(() => 
+    recipeBooks.map((book, index) => ({
+      id: book.BookID,
+      cells: [
+        index + 1,
+        book.BookName,
+        getAuthorName(book.AuthorID),
+        <DeleteButton onClick={() => handleDelete(book.BookID)} />,
+      ],
+    })),
+    [recipeBooks, authors]
+  );
+
+  return (
+    <div className="overflow-x-auto">
+      <Table headers={headers} data={data} />
+    </div>
+  );
+}
+
+export default RecipeBookTable;
+
+
+==================== C:\Code\recipe-app\client/src\components\RecipeTable.jsx ====================
+
+// src/components/RecipeTable.jsx
+import React, { useMemo } from 'react';
+import { useData } from '../context/DataContext';
+import DeleteButton from './ui/DeleteButton';
+import Table from './ui/Table';
+import Button from './ui/Button';
+
+function RecipeTable({ onAddIngredients }) {
+  const { recipes, ingredients, units, recipeIngredients, deleteRecipe } = useData();
+
+  const handleDelete = async (recipeId) => {
+    if (window.confirm('Are you sure you want to delete this recipe?')) {
+      try {
+        await deleteRecipe(recipeId);
+      } catch (error) {
+        alert('Failed to delete recipe');
+      }
+    }
+  };
+
+  const getIngredientName = (ingredientId) => {
+    const ingredient = ingredients.find(ingredient => ingredient.IngredientID === ingredientId);
+    return ingredient ? ingredient.IngredientName : 'Unknown';
+  };
+
+  const getUnitName = (unitId) => {
+    const unit = units.find(unit => unit.UnitID === unitId);
+    return unit ? unit.UnitName : 'Unknown';
+  };
+
+  const renderIngredients = (recipeId) => {
+    const filteredIngredients = recipeIngredients.filter(ri => ri.RecipeID === recipeId);
+    return filteredIngredients.map(ingredient => (
+      <li key={ingredient.RecipeIngredientID}>
+        {ingredient.Quantity} {getUnitName(ingredient.UnitID)} of {getIngredientName(ingredient.IngredientID)}
+      </li>
+    ));
+  };
+
+  const headers = ['#', 'Recipe Name', 'Author ID', 'Ingredients', 'Actions'];
+
+  const data = useMemo(() =>
+    recipes.map((recipe, index) => ({
+      id: recipe.RecipeID,
+      cells: [
+        index + 1,
+        recipe.RecipeName,
+        recipe.AuthorID,
+        <ul className='list-disc ml-4'>
+          {renderIngredients(recipe.RecipeID)}
+        </ul>,
+        <div className='flex gap-2'>
+          <Button
+            size="sm"
+            variant="primary"
+            outline={true}
+            onClick={() => onAddIngredients(recipe.RecipeID)}
+          >
+            Add Ingredients
+          </Button>
+          <DeleteButton onClick={() => handleDelete(recipe.RecipeID)} />
+        </div>
+      ],
+    })),
+    [recipes, recipeIngredients, ingredients, units]
+  );
+
+  return (
+    <div className="overflow-x-auto">
+      <Table headers={headers} data={data} />
+    </div>
+  );
+}
+
+export default RecipeTable;
+
+
+==================== C:\Code\recipe-app\client/src\components\ShoppingList.jsx ====================
+
+// src/components/ShoppingList.jsx
+
+import React from 'react';
+import { useData } from '../context/DataContext';
+import Table from './ui/Table';
+
+function ShoppingList({ mealPlanId }) {
+    const { getShoppingList } = useData();
+    const shoppingList = getShoppingList(mealPlanId);
+
+    const headers = ['Ingredient Name', 'Quantity', 'Unit'];
+
+    const data = shoppingList.map((ingredient) => ({
+        id: ingredient.IngredientID,
+        cells: [
+            ingredient.IngredientName,
+            ingredient.Quantity,
+            ingredient.unit ? ingredient.unit.UnitName : 'Unknown'
+        ],
+    }));
+
+    return (
+        <div className="overflow-x-auto">
+            <Table headers={headers} data={data} />
+        </div>
+    );
+}
+
+export default ShoppingList;
+
+
+==================== C:\Code\recipe-app\client/src\components\ShoppingListModal.jsx ====================
+
+// src/components/ShoppingListModal.jsx
+
+import React from 'react';
+import Modal from './ui/Modal';
+
+function ShoppingListModal({ shoppingList }) {
+    return (
+        <Modal id="shopping_list_modal" title="Generated Shopping List">
+            {shoppingList ? (
+                <ul className="list-disc ml-4">
+                    {shoppingList.map((item, index) => (
+                        <li key={index}>{item.Quantity} {item.UnitName} of {item.IngredientName}</li>
+                    ))}
+                </ul>
+            ) : (
+                <p>No items in the shopping list.</p>
+            )}
+        </Modal>
+    );
+}
+
+export default ShoppingListModal;
+
+
+==================== C:\Code\recipe-app\client/src\components\SideBar.jsx ====================
+
+// src/components/SideBar.jsx
+
+import React from "react";
+import { NavLink } from "react-router-dom";
+import { FaTachometerAlt, FaList, FaSitemap, FaLeaf, FaBook, FaUser, FaUtensils, FaCalendarAlt } from "react-icons/fa";
+
+const menuItems = [
+  { title: "Dashboard", link: "/", Icon: FaTachometerAlt },
+  { title: "Ingredients", isTitle: true },
+  { title: "Categories", link: "/manage-categories", Icon: FaList },
+  { title: "Sub-categories", link: "/manage-sub-categories", Icon: FaSitemap },
+  { title: "Ingredients", link: "/manage-ingredients", Icon: FaLeaf },
+  { title: "Recipes", isTitle: true },
+  { title: "Recipes", link: "/manage-recipes", Icon: FaUtensils },
+  { title: "Authors", link: "/manage-authors", Icon: FaUser },
+  { title: "Recipe books", link: "/manage-recipe-books", Icon: FaBook },
+  { title: "Meal Plans", link: "/manage-meal-plans", Icon: FaCalendarAlt },
+];
+
+const MenuItem = ({ item }) => {
+  if (item.isTitle) {
+    return <li className="menu-title">{item.title}</li>;
+  }
+
+  const { Icon } = item;
+
+  return (
+    <li>
+      <NavLink to={item.link} className={({ isActive }) => (isActive ? "active" : "")}>
+        <Icon className="inline mr-2" />
+        {item.title}
+      </NavLink>
+    </li>
+  );
+};
+
+export default function SideBar() {
+  return (
+    <aside className="sticky top-0 overflow-y-auto w-60 bg-base-200 p-4 min-w-60">
+      <ul className="menu px-0 gap-1">
+        {menuItems.map((item, index) => (
+          <MenuItem key={index} item={item} />
+        ))}
+      </ul>
+    </aside>
+  );
+}
+
+
+==================== C:\Code\recipe-app\client/src\components\SubCategoryTable.jsx ====================
+
+// src/components/SubCategoryTable.jsx
+import React, { useState, useMemo } from 'react';
+import { useData } from '../context/DataContext';
+import Table from './ui/Table';
+import Button from './ui/Button';
+import DeleteButton from './ui/DeleteButton';
+
+function SubCategoryTable() {
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const { categories, subCategories, deleteSubCategory } = useData();
+
+  const handleDelete = async (subCategoryId) => {
+    if (window.confirm('Are you sure you want to delete this sub-category?')) {
+      try {
+        await deleteSubCategory(subCategoryId);
+      } catch (error) {
+        alert('Failed to delete sub-category');
+      }
+    }
+  };
+
+  const getCategoryName = (categoryId) => {
+    const category = categories.find(category => category.CategoryID === categoryId);
+    return category ? category.CategoryName : 'Unknown';
+  };
+
+  const handleCategoryChange = (e) => {
+    const selectedValue = parseInt(e.target.value);
+    setSelectedCategories(prevSelected =>
+      prevSelected.includes(selectedValue)
+        ? prevSelected.filter(id => id !== selectedValue)
+        : [...prevSelected, selectedValue]
+    );
+  };
+
+  const filteredSubCategories = useMemo(() => 
+    selectedCategories.length > 0
+      ? subCategories.filter(subCategory => selectedCategories.includes(subCategory.CategoryID))
+      : subCategories,
+    [subCategories, selectedCategories]
+  );
+
+  const headers = ['#', 'Sub-Category Name', 'Category Name', 'Actions'];
+
+  const data = useMemo(() =>
+    filteredSubCategories.map((subCategory, index) => ({
+      id: subCategory.SubCategoryID,
+      cells: [
+        index + 1,
+        subCategory.SubCategoryName,
+        getCategoryName(subCategory.CategoryID),
+        <DeleteButton key={subCategory.SubCategoryID} onClick={() => handleDelete(subCategory.SubCategoryID)} />
+      ],
+    })),
+    [filteredSubCategories, categories]
+  );
+
+  return (
+    <div className="overflow-x-auto">
+      <div className="flex items-center mb-4">
+        <label className="mr-2">Filter by Category:</label>
+        <select
+          className="select select-bordered"
+          value=""
+          onChange={handleCategoryChange}
+        >
+          <option value="" disabled>Select Categories</option>
+          {categories.map(category => (
+            <option
+              key={category.CategoryID}
+              value={category.CategoryID}
+              disabled={selectedCategories.includes(category.CategoryID)}
+            >
+              {category.CategoryName}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="mb-4">
+        {selectedCategories.map(categoryId => (
+          <div key={categoryId} className="badge badge-primary mr-2">
+            {getCategoryName(categoryId)}
+            <button
+              type="button"
+              className="ml-1"
+              onClick={() => setSelectedCategories(selectedCategories.filter(id => id !== categoryId))}
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
+      <Table headers={headers} data={data} />
+    </div>
+  );
+}
+
+export default SubCategoryTable;
+
+
+==================== C:\Code\recipe-app\client/src\components\ThemeSwitcher.jsx ====================
+
+import React, { useEffect, useState } from 'react';
+
+const ThemeSwitcher = () => {
+  const [theme, setTheme] = useState('light');
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme) {
+      document.documentElement.setAttribute('data-theme', savedTheme);
+      setTheme(savedTheme);
+    }
+  }, []);
+
+  const handleThemeChange = (event) => {
+    const selectedTheme = event.target.value;
+    document.documentElement.setAttribute('data-theme', selectedTheme);
+    localStorage.setItem('theme', selectedTheme);
+    setTheme(selectedTheme);
+  };
+
+  return (   
+    <div className="dropdown dropdown-end">
+      <select className="btn btn-ghost btn-sm" value={theme} onChange={handleThemeChange}>
+        <option value="light">Light</option>
+        <option value="dark">Dark</option>
+        <option value="cupcake">Cupcake</option>
+        <option value="bumblebee">Bumblebee</option>
+        <option value="emerald">Emerald</option>
+        <option value="corporate">Corporate</option>
+        <option value="synthwave">Synthwave</option>
+        <option value="retro">Retro</option>
+        <option value="cyberpunk">Cyberpunk</option>
+        <option value="valentine">Valentine</option>
+        <option value="halloween">Halloween</option>
+        <option value="garden">Garden</option>
+        <option value="forest">Forest</option>
+        <option value="aqua">Aqua</option>
+        <option value="lofi">Lofi</option>
+        <option value="pastel">Pastel</option>
+        <option value="fantasy">Fantasy</option>
+        <option value="wireframe">Wireframe</option>
+        <option value="black">Black</option>
+        <option value="luxury">Luxury</option>
+        <option value="dracula">Dracula</option>
+        <option value="cmyk">CMYK</option>
+        <option value="autumn">Autumn</option>
+        <option value="business">Business</option>
+        <option value="acid">Acid</option>
+        <option value="lemonade">Lemonade</option>
+        <option value="night">Night</option>
+        <option value="coffee">Coffee</option>
+        <option value="winter">Winter</option>
+      </select>
+    </div>
+  );
+};
+
+export default ThemeSwitcher;
+
+
+==================== C:\Code\recipe-app\client/src\components\ui\Button.jsx ====================
+
+// src/components/ui/Button.jsx
+import React from 'react';
+
+const Button = ({ type, variant = 'primary', size = 'md', outline = false, block = false, circle = false, square = false, className = '', onClick, children }) => {
+  const baseClass = 'btn';
+  const variantClass = `btn-${variant}`;
+  const sizeClass = `btn-${size}`;
+  const outlineClass = outline ? 'btn-outline' : '';
+  const blockClass = block ? 'btn-block' : '';
+  const circleClass = circle ? 'btn-circle' : '';
+  const squareClass = square ? 'btn-square' : '';
+
+  const classes = `${baseClass} ${variantClass} ${sizeClass} ${outlineClass} ${blockClass} ${circleClass} ${squareClass} ${className}`;
+
+  return (
+    <button type={type} className={classes} onClick={onClick}>
+      {children}
+    </button>
+  );
+};
+
+export default Button;
+
+
+==================== C:\Code\recipe-app\client/src\components\ui\Card.jsx ====================
+
+// src/components/ui/Card.jsx
+import React from 'react';
+import { Link } from 'react-router-dom';
+import Button from './Button';
+
+const Card = ({ title, count, link, children }) => {
+    return (
+        <div className="card bg-base-100 w-96 shadow-xl">
+            <div className="card-body">
+                <h2 className="card-title">{title}</h2>
+                {count && <p className="text-2xl font-bold">{count}</p>}
+                {children}
+                <div className="card-actions justify-end">
+                    <Link to={link}>
+                        <Button
+                            variant='secondary'
+                            outline={true}
+                        >
+                            Manage
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default Card;
+
+
+==================== C:\Code\recipe-app\client/src\components\ui\DeleteButton.jsx ====================
+
+// src/components/ui/DeleteButton.jsx
+import React from 'react';
+import Button from './Button';
+
+const DeleteButton = ({ onClick }) => (
+  <Button
+    size="sm"
+    variant="error"
+    outline={true}
+    onClick={onClick}
+  >
+    Delete
+  </Button>
+);
+
+export default DeleteButton;
+
+
+==================== C:\Code\recipe-app\client/src\components\ui\Modal.jsx ====================
+
+import React from 'react';
+
+const Modal = ({ id, title, children, wide }) => {
+    const modalBoxClass = wide ? 'modal-box w-11/12 max-w-5xl' : 'modal-box';
+    const modalClass = wide ? 'modal' : 'modal modal-bottom sm:modal-middle';
+
+    return (
+        <dialog id={id} className={modalClass}>
+            <div className={modalBoxClass}>
+                <form method="dialog">
+                    <button className="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button>
+                </form>
+                <h3 className="font-bold text-lg">{title}</h3>
+                {children}
+            </div>
+        </dialog>
+    );
+};
+
+export default Modal;
+
+
+==================== C:\Code\recipe-app\client/src\components\ui\Select.jsx ====================
+
+// src/components/ui/Select.jsx
+import React from 'react';
+
+const Select = ({ label, value, onChange, required, options, defaultOption, disabled }) => {
+  return (
+    <label className="form-control">
+      <div className="label">
+        <span className="label-text">{label}</span>
+      </div>
+      <select
+        className="select select-bordered"
+        value={value}
+        onChange={onChange}
+        required={required}
+        disabled={disabled}
+      >
+        <option value="" disabled>{defaultOption}</option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value} disabled={option.disabled}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+};
+
+export default Select;
+
+
+==================== C:\Code\recipe-app\client/src\components\ui\Table.jsx ====================
+
+// src/components/ui/Table.jsx
+import React, { useState } from 'react';
+import { FaSort, FaSortUp, FaSortDown } from 'react-icons/fa';
+
+const Table = ({ headers, data }) => {
+  const [sortConfig, setSortConfig] = useState({ key: '', direction: 'ascending' });
+
+  const sortedData = React.useMemo(() => {
+    let sortableData = [...data];
+    if (sortConfig.key) {
+      sortableData.sort((a, b) => {
+        const aKey = a.cells[headers.indexOf(sortConfig.key)];
+        const bKey = b.cells[headers.indexOf(sortConfig.key)];
+
+        if (aKey < bKey) {
+          return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (aKey > bKey) {
+          return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableData;
+  }, [data, sortConfig, headers]);
+
+  const requestSort = (key) => {
+    let direction = 'ascending';
+    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+      direction = 'descending';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (header) => {
+    if (sortConfig.key === header) {
+      return sortConfig.direction === 'ascending' ? <FaSortUp /> : <FaSortDown />;
+    }
+    return <FaSort />;
+  };
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="table table-zebra">
+        <thead>
+          <tr>
+            {headers.map((header, index) => (
+              <th key={index} onClick={() => requestSort(header)} className="cursor-pointer">
+                <div className="flex items-center">
+                  {header}
+                  <span className="ml-2">{getSortIcon(header)}</span>
+                </div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {sortedData.map((row, rowIndex) => (
+            <tr key={row.id || rowIndex}>
+              {row.cells.map((cell, cellIndex) => (
+                <td key={cellIndex}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default Table;
+
+
+==================== C:\Code\recipe-app\client/src\components\ui\TextInput.jsx ====================
+
+import React from 'react';
+
+const TextInput = ({ label, type = 'text', value, onChange, required = false, placeholder = '', className = 'input input-bordered', min, max }) => {
+  return (
+    <label className="form-control">
+      {label && (
+        <div className="label">
+          <span className="label-text">{label}</span>
+        </div>
+      )}
+      <input
+        type={type}
+        className={className}
+        value={value}
+        onChange={onChange}
+        required={required}
+        placeholder={placeholder}
+        min={min}
+        max={max}
+      />
+    </label>
+  );
+};
+
+export default TextInput;
+
+
+==================== C:\Code\recipe-app\client/src\context\AuthContext.jsx ====================
+
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+
+const AuthContext = createContext();
+
+export const AuthProvider = ({ children }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const storedAuth = localStorage.getItem('isAuthenticated');
+    if (storedAuth === 'true') {
+      setIsAuthenticated(true);
+    }
+    setLoading(false); // Indicate that the auth status has been checked
+  }, []);
+
+  const login = async (username, password) => {
+    const response = await fetch('http://localhost:8000/api/users/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ Username: username, Password: password }),
+    });
+
+    if (response.ok) {
+      setIsAuthenticated(true);
+      localStorage.setItem('isAuthenticated', 'true');
+      navigate('/');
+    } else {
+      alert('Login failed');
+    }
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('isAuthenticated');
+    navigate('/login');
+  };
+
+  if (loading) {
+    return <div>Loading...</div>; // Display a loading message or spinner while checking auth status
+  }
+
+  return (
+    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => useContext(AuthContext);
+
+
+==================== C:\Code\recipe-app\client/src\context\DataContext.jsx ====================
+
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import * as apiService from '../services/apiService';
+
+const DataContext = createContext();
+
+export const DataProvider = ({ children }) => {
+  const [categories, setCategories] = useState([]);
+  const [subCategories, setSubCategories] = useState([]);
+  const [ingredients, setIngredients] = useState([]);
+  const [authors, setAuthors] = useState([]);
+  const [recipeBooks, setRecipeBooks] = useState([]);
+  const [recipes, setRecipes] = useState([]);
+  const [units, setUnits] = useState([]);
+  const [recipeIngredients, setRecipeIngredients] = useState([]);
+  const [mealPlans, setMealPlans] = useState([]);
+  const [mealPlanRecipes, setMealPlanRecipes] = useState([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [
+          categoriesData,
+          subCategoriesData,
+          ingredientsData,
+          authorsData,
+          recipeBooksData,
+          recipesData,
+          unitsData,
+          recipeIngredientsData,
+          mealPlansData,
+          mealPlanRecipesData,
+        ] = await Promise.all([
+          apiService.getCategories(),
+          apiService.getSubCategories(),
+          apiService.getIngredients(),
+          apiService.getAuthors(),
+          apiService.getRecipeBooks(),
+          apiService.getRecipes(),
+          apiService.getUnits(),
+          apiService.getRecipeIngredients(),
+          apiService.getMealPlans(),
+          apiService.getMealPlanRecipes(),
+        ]);
+
+        setCategories(categoriesData);
+        setSubCategories(subCategoriesData);
+        setIngredients(ingredientsData);
+        setAuthors(authorsData);
+        setRecipeBooks(recipeBooksData);
+        setRecipes(recipesData);
+        setUnits(unitsData);
+        setRecipeIngredients(recipeIngredientsData);
+        setMealPlans(mealPlansData);
+        setMealPlanRecipes(mealPlanRecipesData);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Categories CRUD
+  const createCategory = async (categoryName) => {
+    try {
+      const newCategory = await apiService.addCategory(categoryName);
+      setCategories([...categories, newCategory]);
+    } catch (error) {
+      console.error('Error adding category:', error);
+    }
+  };
+
+  const updateCategory = async (categoryId, categoryName) => {
+    try {
+      const updatedCategory = await apiService.updateCategory(categoryId, categoryName);
+      setCategories(categories.map(cat => (cat.CategoryID === categoryId ? updatedCategory : cat)));
+    } catch (error) {
+      console.error('Error updating category:', error);
+    }
+  };
+
+  const deleteCategory = async (categoryId) => {
+    try {
+      await apiService.deleteCategory(categoryId);
+      setCategories(categories.filter(cat => cat.CategoryID !== categoryId));
+    } catch (error) {
+      console.error('Error deleting category:', error);
+    }
+  };
+
+  // SubCategories CRUD
+  const createSubCategory = async (subCategory) => {
+    try {
+      const newSubCategory = await apiService.addSubCategory(subCategory);
+      setSubCategories([...subCategories, newSubCategory]);
+    } catch (error) {
+      console.error('Error adding subcategory:', error);
+    }
+  };
+
+  const updateSubCategory = async (subCategoryId, subCategoryName, categoryId) => {
+    try {
+      const updatedSubCategory = await apiService.updateSubCategory(subCategoryId, subCategoryName, categoryId);
+      setSubCategories(subCategories.map(sub => (sub.SubCategoryID === subCategoryId ? updatedSubCategory : sub)));
+    } catch (error) {
+      console.error('Error updating subcategory:', error);
+    }
+  };
+
+  const deleteSubCategory = async (subCategoryId) => {
+    try {
+      await apiService.deleteSubCategory(subCategoryId);
+      setSubCategories(subCategories.filter(sub => sub.SubCategoryID !== subCategoryId));
+    } catch (error) {
+      console.error('Error deleting subcategory:', error);
+    }
+  };
+
+  // Ingredients CRUD
+  const createIngredient = async (ingredient) => {
+    try {
+      const newIngredient = await apiService.addIngredient(ingredient);
+      setIngredients([...ingredients, newIngredient]);
+    } catch (error) {
+      console.error('Error adding ingredient:', error);
+    }
+  };
+
+  const updateIngredient = async (ingredientId, ingredient) => {
+    try {
+      const updatedIngredient = await apiService.updateIngredient(ingredientId, ingredient);
+      setIngredients(ingredients.map(ing => (ing.IngredientID === ingredientId ? updatedIngredient : ing)));
+    } catch (error) {
+      console.error('Error updating ingredient:', error);
+    }
+  };
+
+  const deleteIngredient = async (ingredientId) => {
+    try {
+      await apiService.deleteIngredient(ingredientId);
+      setIngredients(ingredients.filter(ing => ing.IngredientID !== ingredientId));
+    } catch (error) {
+      console.error('Error deleting ingredient:', error);
+    }
+  };
+
+  // Authors CRUD
+  const createAuthor = async (authorName, authorImageURL) => {
+    try {
+      const newAuthor = await apiService.addAuthor(authorName, authorImageURL);
+      setAuthors([...authors, newAuthor]);
+    } catch (error) {
+      console.error('Error adding author:', error);
+    }
+  };
+
+  const updateAuthor = async (authorId, author) => {
+    try {
+      const updatedAuthor = await apiService.updateAuthor(authorId, author);
+      setAuthors(authors.map(auth => (auth.AuthorID === authorId ? updatedAuthor : auth)));
+    } catch (error) {
+      console.error('Error updating author:', error);
+    }
+  };
+
+  const deleteAuthor = async (authorId) => {
+    try {
+      await apiService.deleteAuthor(authorId);
+      setAuthors(authors.filter(auth => auth.AuthorID !== authorId));
+    } catch (error) {
+      console.error('Error deleting author:', error);
+    }
+  };
+
+  // Recipe Books CRUD
+  const createRecipeBook = async (recipeBook) => {
+    try {
+      const newRecipeBook = await apiService.addRecipeBook(recipeBook);
+      setRecipeBooks([...recipeBooks, newRecipeBook]);
+    } catch (error) {
+      console.error('Error adding recipe book:', error);
+    }
+  };
+
+  const updateRecipeBook = async (recipeBookId, recipeBook) => {
+    try {
+      const updatedRecipeBook = await apiService.updateRecipeBook(recipeBookId, recipeBook);
+      setRecipeBooks(recipeBooks.map(book => (book.BookID === recipeBookId ? updatedRecipeBook : book)));
+    } catch (error) {
+      console.error('Error updating recipe book:', error);
+    }
+  };
+
+  const deleteRecipeBook = async (recipeBookId) => {
+    try {
+      await apiService.deleteRecipeBook(recipeBookId);
+      setRecipeBooks(recipeBooks.filter(book => book.BookID !== recipeBookId));
+    } catch (error) {
+      console.error('Error deleting recipe book:', error);
+    }
+  };
+
+  // Recipes CRUD
+  const createRecipe = async (recipe) => {
+    try {
+      const newRecipe = await apiService.addRecipe(recipe);
+      setRecipes([...recipes, newRecipe]);
+    } catch (error) {
+      console.error('Error adding recipe:', error);
+      throw error; // Ensure to rethrow the error to be caught in the component
+    }
+  };
+
+  const updateRecipe = async (recipeId, recipe) => {
+    try {
+      const updatedRecipe = await apiService.updateRecipe(recipeId, recipe);
+      setRecipes(recipes.map(rec => (rec.RecipeID === recipeId ? updatedRecipe : rec)));
+    } catch (error) {
+      console.error('Error updating recipe:', error);
+    }
+  };
+
+  const deleteRecipe = async (recipeId) => {
+    try {
+      await apiService.deleteRecipe(recipeId);
+      setRecipes(recipes.filter(rec => rec.RecipeID !== recipeId));
+    } catch (error) {
+      console.error('Error deleting recipe:', error);
+    }
+  };
+
+  const createRecipeIngredient = async (recipeIngredient) => {
+    try {
+      const newRecipeIngredient = await apiService.addRecipeIngredient(recipeIngredient);
+      setRecipeIngredients([...recipeIngredients, newRecipeIngredient]);
+    } catch (error) {
+      console.error('Error adding recipe ingredient:', error);
+    }
+  };
+
+  // Meal Plans CRUD
+  const createMealPlan = async (mealPlan) => {
+    try {
+      const newMealPlan = await apiService.addMealPlan(mealPlan);
+      setMealPlans([...mealPlans, newMealPlan]);
+    } catch (error) {
+      console.error('Error adding meal plan:', error);
+    }
+  };
+
+  const updateMealPlan = async (mealPlanId, mealPlan) => {
+    try {
+      const updatedMealPlan = await apiService.updateMealPlan(mealPlanId, mealPlan);
+      setMealPlans(mealPlans.map(mp => (mp.MealPlanID === mealPlanId ? updatedMealPlan : mp)));
+    } catch (error) {
+      console.error('Error updating meal plan:', error);
+    }
+  };
+
+  const deleteMealPlan = async (mealPlanId) => {
+    try {
+      await apiService.deleteMealPlan(mealPlanId);
+      setMealPlans(mealPlans.filter(mp => mp.MealPlanID !== mealPlanId));
+    } catch (error) {
+      console.error('Error deleting meal plan:', error);
+    }
+  };
+
+  // Meal Plan Recipes CRUD
+  const createMealPlanRecipe = async (mealPlanRecipe) => {
+    try {
+      const newMealPlanRecipe = await apiService.addMealPlanRecipe(mealPlanRecipe);
+      setMealPlanRecipes([...mealPlanRecipes, newMealPlanRecipe]);
+    } catch (error) {
+      console.error('Error adding meal plan recipe:', error);
+    }
+  };
+
+  const updateMealPlanRecipe = async (mealPlanRecipeId, mealPlanRecipe) => {
+    try {
+      const updatedMealPlanRecipe = await apiService.updateMealPlanRecipe(mealPlanRecipeId, mealPlanRecipe);
+      setMealPlanRecipes(prev => prev.map(mpr => mpr.MealPlanRecipeID === mealPlanRecipeId ? updatedMealPlanRecipe : mpr));
+    } catch (error) {
+      console.error('Error updating meal plan recipe:', error);
+    }
+  };
+
+  const deleteMealPlanRecipe = async (mealPlanRecipeId) => {
+    try {
+      await apiService.deleteMealPlanRecipe(mealPlanRecipeId);
+      setMealPlanRecipes(mealPlanRecipes.filter(mpr => mpr.MealPlanRecipeID !== mealPlanRecipeId));
+    } catch (error) {
+      console.error('Error deleting meal plan recipe:', error);
+    }
+  };
+
+  const getShoppingList = (mealPlanId) => {
+    const filteredMealPlanRecipes = mealPlanRecipes.filter(mpr => mpr.MealPlanID === mealPlanId);
+
+    const ingredientMap = new Map();
+
+    filteredMealPlanRecipes.forEach(mpr => {
+      const recipeId = mpr.RecipeID;
+      const recipeIngredientsForRecipe = recipeIngredients.filter(ri => ri.RecipeID === recipeId);
+
+      recipeIngredientsForRecipe.forEach(ri => {
+        const ingredient = ingredients.find(ing => ing.IngredientID === ri.IngredientID);
+        const unit = units.find(unit => unit.UnitID === ri.UnitID);
+        if (ingredient) {
+          const existing = ingredientMap.get(ingredient.IngredientID);
+          if (existing) {
+            existing.Quantity += ri.Quantity;
+          } else {
+            ingredientMap.set(ingredient.IngredientID, {
+              ...ingredient,
+              Quantity: ri.Quantity,
+              unit: unit || { UnitName: 'Unknown' }
+            });
+          }
+        }
+      });
+    });
+
+    return Array.from(ingredientMap.values());
+  };
+
+  return (
+    <DataContext.Provider
+      value={{
+        categories, createCategory, updateCategory, deleteCategory,
+        subCategories, createSubCategory, updateSubCategory, deleteSubCategory,
+        ingredients, createIngredient, updateIngredient, deleteIngredient,
+        authors, createAuthor, updateAuthor, deleteAuthor,
+        recipeBooks, createRecipeBook, updateRecipeBook, deleteRecipeBook,
+        recipes, createRecipe, updateRecipe, deleteRecipe,
+        units, recipeIngredients, createRecipeIngredient,
+        mealPlans, createMealPlan, updateMealPlan, deleteMealPlan,
+        mealPlanRecipes, createMealPlanRecipe, updateMealPlanRecipe, deleteMealPlanRecipe,
+        getShoppingList,
+      }}
+    >
+      {children}
+    </DataContext.Provider>
+  );
+};
+
+export const useData = () => useContext(DataContext);
+
+
+==================== C:\Code\recipe-app\client/src\pages\Dashboard.jsx ====================
+
+// src/pages/Home.jsx
+import React from 'react';
+import { useData } from '../context/DataContext';
+import Card from '../components/ui/Card';
+
+function Dashboard() {
+  const { categories, subCategories, ingredients, authors, recipeBooks, recipes } = useData();
+
+  const items = [
+    { name: 'Categories', count: categories.length, link: '/manage-categories' },
+    { name: 'Subcategories', count: subCategories.length, link: '/manage-sub-categories' },
+    { name: 'Ingredients', count: ingredients.length, link: '/manage-ingredients' },
+    { name: 'Authors', count: authors.length, link: '/manage-authors' },
+    { name: 'Recipe Books', count: recipeBooks.length, link: '/manage-recipe-books' },
+    { name: 'Recipes', count: recipes.length, link: '/manage-recipes' },
+  ];
+
+  return (
+    <div className="flex flex-wrap gap-4 p-6">
+      {items.map((item, index) => (
+        <Card key={index} title={item.name} count={item.count} link={item.link} />
+      ))}
+    </div>
+  );
+}
+
+export default Dashboard;
+
+
+==================== C:\Code\recipe-app\client/src\pages\Home.jsx ====================
+
+import React, { useState } from 'react';
+import { useData } from '../context/DataContext';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
+import AddMealPlanModal from '../components/AddMealPlanModal';
+import { format, isWithinInterval, parseISO, startOfWeek, endOfWeek, isFuture, isPast } from 'date-fns';
+import { Link } from 'react-router-dom';
+
+const Home = () => {
+  const { mealPlans } = useData();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const categorizeMealPlans = (mealPlans) => {
+    const now = new Date();
+    const currentWeekStart = startOfWeek(now, { weekStartsOn: 1 });
+    const currentWeekEnd = endOfWeek(now, { weekStartsOn: 1 });
+
+    const currentWeekPlans = mealPlans.filter(plan =>
+      isWithinInterval(parseISO(plan.StartDate), { start: currentWeekStart, end: currentWeekEnd }) ||
+      isWithinInterval(parseISO(plan.EndDate), { start: currentWeekStart, end: currentWeekEnd })
+    );
+
+    const upcomingPlans = mealPlans.filter(plan =>
+      isFuture(parseISO(plan.StartDate)) && !currentWeekPlans.includes(plan)
+    );
+
+    const previousPlans = mealPlans.filter(plan =>
+      isPast(parseISO(plan.EndDate)) && !currentWeekPlans.includes(plan)
+    );
+
+    return { currentWeekPlans, upcomingPlans, previousPlans };
+  };
+
+  const { currentWeekPlans, upcomingPlans, previousPlans } = categorizeMealPlans(mealPlans);
+
+  const renderMealPlanCard = (plan) => (
+    <Link to={`/meal-plan/${plan.MealPlanID}`} key={plan.MealPlanID}>
+      <Card title={plan.PlanName} count={1}>
+        <p>Start: {format(parseISO(plan.StartDate), 'yyyy-MM-dd')}</p>
+        <p>End: {format(parseISO(plan.EndDate), 'yyyy-MM-dd')}</p>
+      </Card>
+    </Link>
+  );
+
+  const openModal = () => {
+    setIsModalOpen(true);
+    document.getElementById('add_meal_plan_modal').showModal();
+  };
+
+  return (
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-4">Current Week</h1>
+      {currentWeekPlans.length > 0 ? (
+        <div className="flex flex-wrap gap-4 mb-8">
+          {currentWeekPlans.map(renderMealPlanCard)}
+        </div>
+      ) : (
+        <div className="mb-8">
+          <p>No current meal plans for this week.</p>
+          <Button onClick={openModal}>Add Meal Plan</Button>
+        </div>
+      )}
+
+      <h2 className="text-xl font-bold mb-4">Upcoming Meal Plans</h2>
+      <div className="flex flex-wrap gap-4 mb-8">
+        {upcomingPlans.map(renderMealPlanCard)}
+      </div>
+
+      <h2 className="text-xl font-bold mb-4">Previous Meal Plans</h2>
+      <div className="flex flex-wrap gap-4 mb-8">
+        {previousPlans.map(renderMealPlanCard)}
+      </div>
+
+      {isModalOpen && <AddMealPlanModal />}
+    </div>
+  );
+};
+
+export default Home;
+
+
+==================== C:\Code\recipe-app\client/src\pages\Login.jsx ====================
+
+import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import TextInput from '../components/ui/TextInput';
+import Button from '../components/ui/Button';
+
+function Login() {
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const { login } = useAuth();
+    const navigate = useNavigate();
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        await login(username, password);
+    };
+
+    return (
+        <div className="flex items-start p-8 justify-center w-full">
+            <div className="flex flex-col w-96 rounded-box bg-base-200 p-6 gap-4">
+                <h1 className="text-3xl font-bold self-center">Log in</h1>
+                {/* <span className="self-center flex gap-2">
+                    Don't have an account?
+                    <a className="link link-secondary" onClick={() => navigate('/register')}>Register</a>
+                </span>
+                <a className="btn btn-neutral">
+                    <i className="fa-brands fa-google text-primary"></i>
+                    Log in with Google
+                </a>
+                <div className="divider">OR</div> */}
+                <form onSubmit={handleSubmit} className='flex gap-4 flex-col'>
+                    <TextInput
+                        label="Username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        required
+                    />
+                    <label className="form-control w-full">
+                        <div className="label">
+                            <span className="label-text">Password</span>
+                            <a className="label-text link link-accent">Forgot password?</a>
+                        </div>
+                        <TextInput
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                        />
+                    </label>
+                    <div className="form-control">
+                        <label className="cursor-pointer label self-start gap-2">
+                            <input type="checkbox" className="checkbox" />
+                            <span className="label-text">Remember me</span>
+                        </label>
+                    </div>
+                    <Button type="submit">Log in</Button>
+                </form>
+            </div>
+        </div>
+    );
+}
+
+export default Login;
+
+
+==================== C:\Code\recipe-app\client/src\pages\ManageAuthors.jsx ====================
+
+// src/pages/ManageAuthors.jsx
+import React from 'react';
+import AuthorTable from '../components/AuthorTable';
+import AddAuthorModal from '../components/AddAuthorModal';
+
+function ManageAuthors() {
+  return (
+    <div className="flex flex-col p-6 gap-4">
+      <h1 className="text-3xl font-bold">Manage Authors</h1>
+      <div>
+        <button className="btn btn-sm btn-secondary btn-outline" onClick={() => document.getElementById('add_author_modal').showModal()}>Add Author</button>
+      </div>
+      <AuthorTable />
+      <AddAuthorModal />
+    </div>
+  );
+}
+
+export default ManageAuthors;
+
+
+==================== C:\Code\recipe-app\client/src\pages\ManageCategories.jsx ====================
+
+// src/pages/ManageCategories.jsx
+import React from 'react';
+import CategoryTable from '../components/CategoryTable';
+import AddCategoryModal from '../components/AddCategoryModal';
+
+function ManageCategories() {
+  return (
+    <div className="flex flex-col p-6 gap-4">
+      <h1 className="text-3xl font-bold">Manage Categories</h1>
+      <div>
+        <button className="btn btn-sm btn-secondary btn-outline" onClick={() => document.getElementById('add_category_modal').showModal()}>Add Category</button>
+      </div>
+      <CategoryTable />
+      <AddCategoryModal />
+    </div>
+  );
+}
+
+export default ManageCategories;
+
+
+==================== C:\Code\recipe-app\client/src\pages\ManageIngredients.jsx ====================
+
+// src/pages/ManageIngredients.jsx
+import React from 'react';
+import IngredientTable from '../components/IngredientTable';
+import AddIngredientModal from '../components/AddIngredientModal';
+
+function ManageIngredients() {
+  return (
+    <div className="flex flex-col p-6 gap-4">
+      <h1 className="text-3xl font-bold">Manage Ingredients</h1>
+      <div>
+        <button className="btn btn-sm btn-secondary btn-outline" onClick={() => document.getElementById('add_ingredient_modal').showModal()}>Add Ingredient</button>
+      </div>
+      <IngredientTable />
+      <AddIngredientModal />
+    </div>
+  );
+}
+
+export default ManageIngredients;
+
+
+==================== C:\Code\recipe-app\client/src\pages\ManageMealPlans.jsx ====================
+
+// src/pages/ManageMealPlans.jsx
+
+import React, { useState } from 'react';
+import MealPlanTable from '../components/MealPlanTable';
+import AddMealPlanModal from '../components/AddMealPlanModal';
+import AddMealPlanRecipeModal from '../components/AddMealPlanRecipeModal';
+import Calendar from '../components/Calendar';
+import ShoppingList from '../components/ShoppingList';
+import { useData } from '../context/DataContext';
+
+function ManageMealPlans() {
+  const [selectedMealPlan, setSelectedMealPlan] = useState(null);
+  const [addingMeal, setAddingMeal] = useState(null);
+  const [modifyingMeal, setModifyingMeal] = useState(null);
+  const { mealPlanRecipes, recipes, deleteMealPlanRecipe } = useData();
+
+  const handleAddMeals = (mealPlan) => {
+    setSelectedMealPlan(mealPlan);
+  };
+
+  const handleAddMeal = (date, mealType) => {
+    setAddingMeal({ date, mealType });
+    document.getElementById('add_meal_plan_recipe_modal').showModal();
+  };
+
+  const handleModifyMeal = async (mealPlanRecipeId, remove = false) => {
+    if (remove) {
+      if (window.confirm('Are you sure you want to remove this meal?')) {
+        try {
+          await deleteMealPlanRecipe(mealPlanRecipeId);
+        } catch (error) {
+          console.log(error);
+          alert('Failed to remove meal');
+        }
+      }
+    } else {
+      const mealPlanRecipe = mealPlanRecipes.find(mpr => mpr.MealPlanRecipeID === mealPlanRecipeId);
+      if (mealPlanRecipe) {
+        setModifyingMeal(mealPlanRecipe);
+        setAddingMeal({
+          date: mealPlanRecipe.Date,
+          mealType: mealPlanRecipe.MealType,
+          recipeId: mealPlanRecipe.RecipeID,
+          mealPlanRecipeId: mealPlanRecipeId
+        });
+        document.getElementById('add_meal_plan_recipe_modal').showModal();
+      } else {
+        console.error('Meal plan recipe not found:', mealPlanRecipeId);
+      }
+    }
+  };
+
+  return (
+    <div className="flex flex-col p-6 gap-4">
+      <h1 className="text-3xl font-bold">Manage Meal Plans</h1>
+      <div>
+        <button className="btn btn-sm btn-secondary btn-outline" onClick={() => document.getElementById('add_meal_plan_modal').showModal()}>Add Meal Plan</button>
+      </div>
+      <MealPlanTable onManageMeals={handleAddMeals} />
+      {selectedMealPlan && (
+        <>
+          <h2 className="text-2xl font-bold mt-6">Meals for Selected Plan</h2>
+          <Calendar
+            mealPlan={selectedMealPlan}
+            mealPlanRecipes={mealPlanRecipes.filter(mpr => mpr.MealPlanID === selectedMealPlan.MealPlanID)}
+            recipes={recipes}
+            onAddMeal={handleAddMeal}
+            onModifyMeal={handleModifyMeal}
+          />
+          <h2 className="text-2xl font-bold mt-6">Shopping List</h2>
+          <ShoppingList mealPlanId={selectedMealPlan.MealPlanID} />
+        </>
+      )}
+      <AddMealPlanModal />
+      {selectedMealPlan && (
+        <AddMealPlanRecipeModal
+          mealPlanId={selectedMealPlan.MealPlanID}
+          startDate={selectedMealPlan.StartDate}
+          endDate={selectedMealPlan.EndDate}
+          defaultDate={addingMeal?.date}
+          defaultMealType={addingMeal?.mealType}
+          defaultRecipeId={addingMeal?.recipeId}
+          mealPlanRecipeId={addingMeal?.mealPlanRecipeId}
+        />
+      )}
+    </div>
+  );
+}
+
+export default ManageMealPlans;
+
+
+==================== C:\Code\recipe-app\client/src\pages\ManageRecipeBooks.jsx ====================
+
+// src/pages/ManageRecipeBooks.jsx
+import React from 'react';
+import RecipeBookTable from '../components/RecipeBookTable';
+import AddRecipeBookModal from '../components/AddRecipeBookModal';
+
+function ManageRecipeBooks() {
+  return (
+    <div className="flex flex-col p-6 gap-4">
+      <h1 className="text-3xl font-bold">Manage Recipe Books</h1>
+      <div>
+        <button className="btn btn-sm btn-secondary btn-outline" onClick={() => document.getElementById('add_recipe_book_modal').showModal()}>Add Recipe Book</button>
+      </div>
+      <RecipeBookTable />
+      <AddRecipeBookModal />
+    </div>
+  );
+}
+
+export default ManageRecipeBooks;
+
+
+==================== C:\Code\recipe-app\client/src\pages\ManageRecipes.jsx ====================
+
+// src/pages/ManageRecipes.jsx
+import React, { useState } from 'react';
+import RecipeTable from '../components/RecipeTable';
+import AddRecipeModal from '../components/AddRecipeModal';
+import AddRecipeIngredientModal from '../components/AddRecipeIngredientModal';
+import Button from '../components/ui/Button';
+
+function ManageRecipes() {
+  const [selectedRecipeId, setSelectedRecipeId] = useState(null);
+
+  const handleAddIngredients = (recipeId) => {
+    setSelectedRecipeId(recipeId);
+    document.getElementById('add_recipe_ingredient_modal').showModal();
+  };
+
+  return (
+    <div className="flex flex-col p-6 gap-4">
+      <h1 className="text-3xl font-bold">Manage Recipes</h1>
+      <div>
+        <Button
+          size='sm'
+          variant='secondary'
+          outline={true}
+          onClick={() => document.getElementById('add_recipe_modal').showModal()}
+        >
+          Add Recipe
+        </Button>       
+      </div>
+      <RecipeTable onAddIngredients={handleAddIngredients} />
+      <AddRecipeModal />
+      <AddRecipeIngredientModal recipeId={selectedRecipeId} />
+    </div>
+  );
+}
+
+export default ManageRecipes;
+
+
+==================== C:\Code\recipe-app\client/src\pages\ManageSubCategories.jsx ====================
+
+// src/pages/ManageSubCategories.jsx
+import React from 'react';
+import SubCategoryTable from '../components/SubCategoryTable';
+import AddSubCategoryModal from '../components/AddSubCategoryModal';
+
+function ManageSubCategories() {
+  return (
+    <div className="flex flex-col p-6 gap-4">
+      <h1 className="text-3xl font-bold">Manage Sub-Categories</h1>
+      <div>
+        <button className="btn btn-sm btn-secondary btn-outline" onClick={() => document.getElementById('add_sub_category_modal').showModal()}>Add Sub-Category</button>
+      </div>
+      <SubCategoryTable />
+      <AddSubCategoryModal />
+    </div>
+  );
+}
+
+export default ManageSubCategories;
+
+
+==================== C:\Code\recipe-app\client/src\pages\MealPlanDetails.jsx ====================
+
+import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { useData } from '../context/DataContext';
+import Calendar from '../components/Calendar';
+import Button from '../components/ui/Button';
+import AddMealPlanRecipeModal from '../components/AddMealPlanRecipeModal';
+
+const MealPlanDetails = () => {
+  const { mealPlanId } = useParams();
+  const { mealPlans, mealPlanRecipes, recipes, createMealPlanRecipe, updateMealPlanRecipe, deleteMealPlanRecipe } = useData();
+  const mealPlan = mealPlans.find(mp => mp.MealPlanID === parseInt(mealPlanId));
+  const [selectedMeal, setSelectedMeal] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleAddMeal = (date, mealType) => {
+    setSelectedMeal({ date, mealType, mealPlanRecipeId: null });
+    setIsModalOpen(true);
+    document.getElementById('add_meal_plan_recipe_modal').showModal();
+  };
+
+  const handleModifyMeal = (mealPlanRecipeId) => {
+    const meal = mealPlanRecipes.find(mpr => mpr.MealPlanRecipeID === mealPlanRecipeId);
+    if (meal) {
+      setSelectedMeal({
+        date: meal.Date,
+        mealType: meal.MealType,
+        recipeId: meal.RecipeID,
+        mealPlanRecipeId: meal.MealPlanRecipeID,
+      });
+      setIsModalOpen(true);
+      document.getElementById('add_meal_plan_recipe_modal').showModal();
+    }
+  };
+
+  const handleSaveMeal = async (mealPlanRecipe) => {
+    if (selectedMeal.mealPlanRecipeId) {
+      await updateMealPlanRecipe(selectedMeal.mealPlanRecipeId, mealPlanRecipe);
+    } else {
+      await createMealPlanRecipe(mealPlanRecipe);
+    }
+    setIsModalOpen(false);
+  };
+
+  const handleRemoveMeal = async (mealPlanRecipeId) => {
+    if (window.confirm('Are you sure you want to remove this meal?')) {
+      await deleteMealPlanRecipe(mealPlanRecipeId);
+    }
+  };
+
+  return (
+    <div className="p-6">
+      {mealPlan ? (
+        <>
+          <h1 className="text-2xl font-bold mb-4">{mealPlan.PlanName}</h1>
+          <Calendar
+            mealPlan={mealPlan}
+            mealPlanRecipes={mealPlanRecipes.filter(mpr => mpr.MealPlanID === mealPlan.MealPlanID)}
+            recipes={recipes}
+            onAddMeal={handleAddMeal}
+            onModifyMeal={handleModifyMeal}
+            onRemoveMeal={handleRemoveMeal}
+          />
+
+          <AddMealPlanRecipeModal
+            mealPlanId={mealPlan.MealPlanID}
+            defaultDate={selectedMeal?.date}
+            defaultMealType={selectedMeal?.mealType}
+            defaultRecipeId={selectedMeal?.recipeId}
+            mealPlanRecipeId={selectedMeal?.mealPlanRecipeId}
+            onSave={handleSaveMeal}
+          />
+        </>
+      ) : (
+        <p>Meal plan not found.</p>
+      )}
+    </div>
+  );
+};
+
+export default MealPlanDetails;
+
+
+==================== C:\Code\recipe-app\client/src\pages\Register.jsx ====================
+
+import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
+
+function Register() {
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const { login } = useAuth();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const response = await fetch('http://localhost:8000/api/users/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ Username: username, Email: email, Password: password }),
+    });
+
+    if (response.ok) {
+      await login(username, password);
+    } else {
+      alert('Registration failed');
+    }
+  };
+
+  return (
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="p-8 bg-white rounded shadow-md w-96">
+        <h2 className="mb-4 text-2xl font-bold text-center">Register</h2>
+        <form onSubmit={handleSubmit}>
+          <div className="mb-4">
+            <label className="block mb-1">Username</label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="w-full px-3 py-2 border rounded"
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block mb-1">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-3 py-2 border rounded"
+              required
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block mb-1">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-3 py-2 border rounded"
+              required
+            />
+          </div>
+          <button type="submit" className="w-full py-2 text-white bg-green-500 rounded hover:bg-green-600">
+            Register
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export default Register;
+
+
+==================== C:\Code\recipe-app\client/src\services\apiService.js ====================
+
+import { supabase } from '../supabaseClient';
+
+// Categories
+export const getCategories = async () => {
+    const { data, error } = await supabase.from('IngredientCategories').select('*');
+    if (error) throw error;
+    return data;
+};
+
+export const addCategory = async (categoryName) => {
+    const { data, error } = await supabase
+        .from('IngredientCategories')
+        .insert([{ CategoryName: categoryName }])
+        .select(); // Ensure to select the inserted rows
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from insert operation');
+    }
+    return data[0];
+};
+
+export const updateCategory = async (categoryId, categoryName) => {
+    const { data, error } = await supabase
+        .from('IngredientCategories')
+        .update({ CategoryName: categoryName })
+        .eq('CategoryID', categoryId)
+        .select(); // Ensure to select the updated rows
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from update operation');
+    }
+    return data[0];
+};
+
+export const deleteCategory = async (categoryId) => {
+    const { data, error } = await supabase.from('IngredientCategories').delete().eq('CategoryID', categoryId).select();
+    if (error) throw error;
+    return data;
+};
+
+// SubCategories
+export const getSubCategories = async () => {
+    const { data, error } = await supabase.from('IngredientSubCategories').select('*');
+    if (error) throw error;
+    return data;
+};
+
+export const addSubCategory = async (subCategory) => {
+    const { data, error } = await supabase
+        .from('IngredientSubCategories')
+        .insert([subCategory])
+        .select(); // Ensure to select the inserted rows
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from insert operation');
+    }
+    return data[0];
+};
+
+export const updateSubCategory = async (subCategoryId, subCategoryName, categoryId) => {
+    const { data, error } = await supabase
+        .from('IngredientSubCategories')
+        .update({ SubCategoryName: subCategoryName, CategoryID: categoryId })
+        .eq('SubCategoryID', subCategoryId)
+        .select(); // Ensure to select the updated rows
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from update operation');
+    }
+    return data[0];
+};
+
+export const deleteSubCategory = async (subCategoryId) => {
+    const { data, error } = await supabase.from('IngredientSubCategories').delete().eq('SubCategoryID', subCategoryId).select();
+    if (error) throw error;
+    return data;
+};
+
+// Ingredients
+export const getIngredients = async () => {
+    const { data, error } = await supabase.from('Ingredients').select('*');
+    if (error) throw error;
+    return data;
+};
+
+export const addIngredient = async (ingredient) => {
+    const { data, error } = await supabase
+        .from('Ingredients')
+        .insert([ingredient])
+        .select(); // Ensure to select the inserted rows
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from insert operation');
+    }
+    return data[0];
+};
+
+export const updateIngredient = async (ingredientId, ingredient) => {
+    const { data, error } = await supabase
+        .from('Ingredients')
+        .update(ingredient)
+        .eq('IngredientID', ingredientId)
+        .select(); // Ensure to select the updated rows
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from update operation');
+    }
+    return data[0];
+};
+
+export const deleteIngredient = async (ingredientId) => {
+    const { data, error } = await supabase.from('Ingredients').delete().eq('IngredientID', ingredientId).select();
+    if (error) throw error;
+    return data;
+};
+
+// Authors
+export const getAuthors = async () => {
+    const { data, error } = await supabase.from('RecipeAuthors').select('*');
+    if (error) throw error;
+    return data;
+};
+
+export const addAuthor = async (authorName, authorImageURL) => {
+    const { data, error } = await supabase
+        .from('RecipeAuthors')
+        .insert([{ AuthorName: authorName, AuthorImageURL: authorImageURL }])
+        .select(); // Ensure to select the inserted rows
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from insert operation');
+    }
+    return data[0];
+};
+
+export const updateAuthor = async (authorId, author) => {
+    const { data, error } = await supabase
+        .from('RecipeAuthors')
+        .update(author)
+        .eq('AuthorID', authorId)
+        .select(); // Ensure to select the updated rows
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from update operation');
+    }
+    return data[0];
+};
+
+export const deleteAuthor = async (authorId) => {
+    const { data, error } = await supabase.from('RecipeAuthors').delete().eq('AuthorID', authorId).select();
+    if (error) throw error;
+    return data;
+};
+
+// Recipe Books
+export const getRecipeBooks = async () => {
+    const { data, error } = await supabase.from('RecipeBooks').select('*');
+    if (error) throw error;
+    return data;
+};
+
+export const addRecipeBook = async (recipeBook) => {
+    const { data, error } = await supabase
+        .from('RecipeBooks')
+        .insert([recipeBook])
+        .select(); // Ensure to select the inserted rows
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from insert operation');
+    }
+    return data[0];
+};
+
+export const updateRecipeBook = async (recipeBookId, recipeBook) => {
+    const { data, error } = await supabase
+        .from('RecipeBooks')
+        .update(recipeBook)
+        .eq('BookID', recipeBookId)
+        .select(); // Ensure to select the updated rows
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from update operation');
+    }
+    return data[0];
+};
+
+export const deleteRecipeBook = async (recipeBookId) => {
+    const { data, error } = await supabase.from('RecipeBooks').delete().eq('BookID', recipeBookId).select();
+    if (error) throw error;
+    return data;
+};
+
+// Recipes
+export const getRecipes = async () => {
+    const { data, error } = await supabase.from('Recipes').select('*');
+    if (error) throw error;
+    return data;
+};
+
+export const addRecipe = async (recipe) => {
+    console.log('Inserting recipe:', recipe);
+    const { data, error } = await supabase
+        .from('Recipes')
+        .insert([recipe])
+        .select(); // Ensure to select the inserted rows
+    console.log('Supabase insert response:', { data, error });
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from insert operation');
+    }
+    return data[0];
+};
+
+export const updateRecipe = async (recipeId, recipe) => {
+    const { data, error } = await supabase
+        .from('Recipes')
+        .update(recipe)
+        .eq('RecipeID', recipeId)
+        .select(); // Ensure to select the updated rows
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from update operation');
+    }
+    return data[0];
+};
+
+export const deleteRecipe = async (recipeId) => {
+    const { data, error } = await supabase.from('Recipes').delete().eq('RecipeID', recipeId).select();
+    if (error) throw error;
+    return data;
+};
+
+// Units
+export const getUnits = async () => {
+    const { data, error } = await supabase.from('Units').select('*');
+    if (error) throw error;
+    return data;
+};
+
+// Recipe Ingredients
+export const getRecipeIngredients = async () => {
+    const { data, error } = await supabase.from('RecipeIngredients').select('*');
+    if (error) throw error;
+    return data;
+};
+
+export const addRecipeIngredient = async (recipeIngredient) => {
+    const { data, error } = await supabase
+        .from('RecipeIngredients')
+        .insert([recipeIngredient])
+        .select(); // Ensure to select the inserted rows
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from insert operation');
+    }
+    return data[0];
+};
+
+// Meal Plans
+export const getMealPlans = async () => {
+    const { data, error } = await supabase.from('MealPlans').select('*');
+    if (error) throw error;
+    return data;
+};
+
+export const addMealPlan = async (mealPlan) => {
+    console.log('Inserting meal plan:', mealPlan);
+    const { data, error } = await supabase
+        .from('MealPlans')
+        .insert([mealPlan])
+        .select(); // Ensure to select the inserted rows
+    console.log('Supabase insert response:', { data, error });
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from insert operation');
+    }
+    return data[0];
+};
+
+export const updateMealPlan = async (mealPlanId, mealPlan) => {
+    const { data, error } = await supabase
+        .from('MealPlans')
+        .update(mealPlan)
+        .eq('MealPlanID', mealPlanId)
+        .select(); // Ensure to select the updated rows
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from update operation');
+    }
+    return data[0];
+};
+
+export const deleteMealPlan = async (mealPlanId) => {
+    const { data, error } = await supabase.from('MealPlans')
+        .delete()
+        .eq('MealPlanID', mealPlanId)
+        .select();
+    if (error) throw error;
+    return data;
+};
+
+// Meal Plan Recipes
+export const getMealPlanRecipes = async () => {
+    const { data, error } = await supabase
+        .from('MealPlanRecipes')
+        .select('*');
+    if (error) throw error;
+    return data;
+};
+
+export const addMealPlanRecipe = async (mealPlanRecipe) => {
+    const { data, error } = await supabase
+        .from('MealPlanRecipes')
+        .insert([mealPlanRecipe])
+        .select(); // Ensure to select the inserted rows
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from insert operation');
+    }
+    return data[0];
+};
+
+export const updateMealPlanRecipe = async (mealPlanRecipeId, mealPlanRecipe) => {
+    const { data, error } = await supabase
+        .from('MealPlanRecipes')
+        .update(mealPlanRecipe)
+        .eq('MealPlanRecipeID', mealPlanRecipeId)
+        .select(); // Ensure to select the updated rows
+    if (error) throw error;
+    if (!data || data.length === 0) {
+        throw new Error('No data returned from update operation');
+    }
+    return data[0];
+};
+
+export const deleteMealPlanRecipe = async (mealPlanRecipeId) => {
+    const { data, error } = await supabase.from('MealPlanRecipes').delete().eq('MealPlanRecipeID', mealPlanRecipeId).select();
+    if (error) throw error;
+    return data;
+};
+
+
+==================== C:\Code\recipe-app\client/src\utils\cache.js ====================
+
+// src/utils/cache.js
+
+class Cache {
+    constructor() {
+      this.cache = {};
+    }
+  
+    set(key, data) {
+      this.cache[key] = {
+        data,
+        timestamp: new Date().getTime(),
+      };
+    }
+  
+    get(key, expiryTime = 180000) { // default expiry time is 180 seconds
+      const cachedItem = this.cache[key];
+      if (cachedItem && (new Date().getTime() - cachedItem.timestamp < expiryTime)) {
+        return cachedItem.data;
+      }
+      return null;
+    }
+  
+    invalidate(key) {
+      delete this.cache[key];
+    }
+  }
+  
+  const cache = new Cache();
+  export default cache;
+  
