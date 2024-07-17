@@ -15,7 +15,7 @@ function FlagRadio({ country, code, selectedCountry, handleCountryChange }) {
                 checked={selectedCountry === code}
                 onChange={handleCountryChange}
             />
-            <label htmlFor={`country-${id}`} className="btn btn-sm inline-flex peer-checked:btn-accent w-full">
+            <label htmlFor={`country-${id}`} className="btn btn-sm inline-flex peer-checked:btn-primary w-full">
                 <FlagIcon code={code} size={16} />
                 <span className="text-[10px]">{country}</span>
             </label>

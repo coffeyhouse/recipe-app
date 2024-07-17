@@ -13,6 +13,9 @@ import Home from "./routes/home";
 import Recipe from "./routes/recipe";
 import RecipeEditor from "./routes/recipe-editor";
 import ToDo from "./routes/to-do";
+import MealPlansList from "./routes/meal-plans-list";
+import RecipeSearch from "./routes/recipe-search";
+import RecipeIngredients from "./routes/recipe-ingredients";
 
 const router = createBrowserRouter([
   {
@@ -29,8 +32,16 @@ const router = createBrowserRouter([
         element: <MealPlan />,
       },
       {
+        path: "meal-plans",
+        element: <MealPlansList />,
+      },
+      {
         path: "recipe/:recipeId",
         element: <Recipe />,
+      },
+      {
+        path: "recipe-search",
+        element: <RecipeSearch />,
       },
       {
         path: "/editor",
@@ -39,6 +50,10 @@ const router = createBrowserRouter([
       {
         path: "/editor/:recipeId",
         element: <RecipeEditor />
+      },
+      {
+        path: "/ingredient-editor/:recipeId",
+        element: <RecipeIngredients />
       },
       {
         path: "/to-do",

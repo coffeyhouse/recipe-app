@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import Input from "../components/Input";
 import Select from "../components/Select";
 import Card from "../components/Card";
-import { FaChevronRight, FaPlus } from "react-icons/fa";
+import { FaChevronRight, FaPlus, FaSave } from "react-icons/fa";
 import Modal from "../components/Modal";
 import FlagRadio from "../components/FlagRadio";
 import { NavLink, useParams } from "react-router-dom";
-import {authors, books, recipes } from "../dummy-data"
+import { authors, recipe_books, recipes } from "../dummy-data";
 
 export default function RecipeEditor() {
     const { recipeId } = useParams();
@@ -24,44 +24,28 @@ export default function RecipeEditor() {
     const [isAddAuthorModalOpen, setIsAddAuthorModalOpen] = useState(false);
     const [isAddRecipeBookModalOpen, setIsAddRecipeBookModalOpen] = useState(false);
     const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+    const [imageUrl, setImageUrl] = useState("");
+    const [previewImageUrl, setPreviewImageUrl] = useState("");
 
     useEffect(() => {
         if (recipeId) {
             const recipe = recipes.find(r => r.id === parseInt(recipeId));
             if (recipe) {
-                setRecipeName(recipe.recipeName);
-                setSelectedAuthor(recipe.selectedAuthor);
-                setSelectedBook(recipe.selectedBook);
-                setPageNumber(recipe.pageNumber);
-                setRecipeUrl(recipe.recipeUrl);
-                setSelectedType(recipe.selectedType);
-                setSelectedCountry(recipe.selectedCountry);
+                setRecipeName(recipe.name);
+                setSelectedAuthor(recipe.author_id);
+                setSelectedBook(recipe.book_id);
+                setPageNumber(recipe.book_page_number);
+                setRecipeUrl(recipe.recipe_url);
+                setSelectedType(recipe.main_meal ? "main" : "side");
+                setSelectedCountry(recipe.cuisine);
                 setServings(recipe.servings);
-                setCookingTime(recipe.cookingTime);
-                setSourceType(recipe.recipeUrl ? "online" : "book");
+                setCookingTime(recipe.cook_time);
+                setSourceType(recipe.recipe_url ? "online" : "book");
+                setImageUrl(recipe.image_url);
+                setPreviewImageUrl(recipe.image_url);
             }
         }
     }, [recipeId]);
-
-    // const authorOptions = [
-    //     { id: 1, label: "Jamie Oliver" },
-    //     { id: 2, label: "Pinch of Nom" },
-    //     { id: 3, label: "Bored of Lunch" },
-    //     { id: 4, label: "Good Food" },
-    //     { id: 5, label: "Gino D'Acampo" },
-    // ];
-
-    // const bookOptions = [
-    //     { id: 1, label: "5 Ingredients", authorId: 1 },
-    //     { id: 2, label: "Ministry of Food", authorId: 1 },
-    //     { id: 3, label: "Quick & Easy", authorId: 2 },
-    //     { id: 4, label: "Everyday Light", authorId: 2 },
-    //     { id: 5, label: "The Healthy Air Fryer Book", authorId: 3 },
-    //     { id: 6, label: "Healthy Slow Cooker: Even Easier", authorId: 3 },
-    //     { id: 7, label: "Ultimate Slow Cooker Recipes", authorId: 4 },
-    //     { id: 8, label: "Gino's Italian Escape", authorId: 5 },
-    //     { id: 9, label: "Gino's Italy", authorId: 5 },
-    // ];
 
     const sourceTypeOptions = [
         { id: "none", label: "None" },
@@ -80,6 +64,7 @@ export default function RecipeEditor() {
             recipeUrl,
             cookingTime,
             selectedCountry,
+            imageUrl
         });
     };
 
@@ -90,7 +75,7 @@ export default function RecipeEditor() {
     const handleAuthorChange = (event) => {
         setSelectedAuthor(event.target.value);
         setSelectedBook("");
-        setSourceType("");
+        setSourceType("none");
         setSelectedBook("");
         setRecipeUrl("");
     };
@@ -131,7 +116,7 @@ export default function RecipeEditor() {
     };
 
     const handleNextStep = () => {
-        setStep((prevStep) => Math.min(prevStep + 1, 3));
+        setStep((prevStep) => Math.min(prevStep + 1, 4));
     };
 
     const handleBackStep = () => {
@@ -141,7 +126,15 @@ export default function RecipeEditor() {
     const handleRecipeSubmit = () => {
         logState();
         openSuccessModal();
-    }
+    };
+
+    const handleImageUrlChange = (event) => {
+        setImageUrl(event.target.value);
+    };
+
+    const handleImageSave = () => {
+        setPreviewImageUrl(imageUrl);
+    };
 
     const isNextButtonDisabled = () => {
         if (step === 1) {
@@ -158,7 +151,7 @@ export default function RecipeEditor() {
         return false;
     };
 
-    const filteredBookOptions = books.filter(book => book.authorId === parseInt(selectedAuthor));
+    const filteredBookOptions = recipe_books.filter(book => book.author_id === parseInt(selectedAuthor));
 
     const openAddAuthorModal = () => {
         setIsAddAuthorModalOpen(true);
@@ -200,6 +193,11 @@ export default function RecipeEditor() {
                 <div className="flex gap-1 items-center">
                     <span className={`block ${step === 3 ? 'bg-primary' : 'bg-gray-200'} text-primary-content w-5 h-5 text-xs rounded flex items-center justify-center font-bold`}>3</span>
                     {step === 3 && <span className="text-xs font-medium">Other details</span>}
+                </div>
+                <span className="text-[8px] text-black/90"><FaChevronRight /></span>
+                <div className="flex gap-1 items-center">
+                    <span className={`block ${step === 4 ? 'bg-accent' : 'bg-gray-200'} text-accent-content w-5 h-5 text-xs rounded flex items-center justify-center font-bold`}>4</span>
+                    {step === 4 && <span className="text-xs font-medium">Image</span>}
                 </div>
             </div>
             <Card className="grow h-full p-2">
@@ -269,14 +267,14 @@ export default function RecipeEditor() {
                             <div className="flex gap-2 items-end">
                                 <Select
                                     label="Author"
-                                    options={authors}
+                                    options={authors.map(author => ({ id: author.id, label: author.name }))}
                                     value={selectedAuthor}
                                     onChange={handleAuthorChange}
                                 />
                                 <button className="btn" onClick={openAddAuthorModal}><FaPlus /></button>
                             </div>
                             <Select
-                                label="Recipe type"
+                                label="Source Type"
                                 options={sourceTypeOptions}
                                 disabled={!selectedAuthor}
                                 value={sourceType}
@@ -286,7 +284,7 @@ export default function RecipeEditor() {
                                 <div className="w-full max-w-xs flex-shrink-1">
                                     <Select
                                         label="Recipe book"
-                                        options={filteredBookOptions}
+                                        options={filteredBookOptions.map(book => ({ id: book.id, label: book.book_name }))}
                                         disabled={sourceType !== "book"}
                                         value={selectedBook}
                                         onChange={handleBookChange}
@@ -348,6 +346,30 @@ export default function RecipeEditor() {
                             </div>
                         </div>
                     )}
+                    {step === 4 && (
+                        <div className="flex flex-col gap-6">
+                            <div className="flex gap-2 items-end">
+                                <div className="w-full max-w-xs flex-shrink-1">
+                                    <Input label="Upload an image" value={imageUrl} onChange={handleImageUrlChange} />
+                                </div>
+                                <button
+                                    className="btn"
+                                    onClick={handleImageSave}
+                                >
+                                    <FaSave />
+                                </button>
+                            </div>
+                            <div>
+                                <div className="label">
+                                    <span className="label-text text-sm font-medium">Preview</span>
+                                </div>
+                                <div className="mask mask-squircle w-[202px] h-[202px] bg-black/10 flex items-center justify-center">
+                                    <img className="mask mask-squircle w-[200px] h-[200px]" src={previewImageUrl || "https://via.placeholder.com/200"} alt="Recipe Preview" />
+                                </div>
+                            </div>
+
+                        </div>
+                    )}
 
                     <div className="flex justify-between gap-4">
                         <div>
@@ -355,13 +377,13 @@ export default function RecipeEditor() {
                         </div>
                         <div className="flex gap-4">
                             <button className="btn px-6">Cancel</button>
-                            {step < 3 && (
-                                <button className={`btn btn-accent px-6`} onClick={handleNextStep} disabled={isNextButtonDisabled()}>
+                            {step < 4 && (
+                                <button className={`btn px-6 ${(step === 1 || step === 4) && "btn-accent"} ${step === 2 && "btn-secondary"} ${step === 3 && "btn-primary"}`} onClick={handleNextStep} disabled={isNextButtonDisabled()}>
                                     Next
                                 </button>
                             )}
-                            {step === 3 && (
-                                <button className={`btn btn-secondary px-6`} onClick={handleRecipeSubmit} disabled={isNextButtonDisabled()}>
+                            {step === 4 && (
+                                <button className={`btn px-6 ${(step === 1 || step === 4) && "btn-accent"} ${step === 2 && "btn-secondary"} ${step === 3 && "btn-primary"}`} onClick={handleRecipeSubmit} disabled={isNextButtonDisabled()}>
                                     Finish
                                 </button>
                             )}
@@ -373,7 +395,6 @@ export default function RecipeEditor() {
             {isAddAuthorModalOpen && (
                 <Modal title="Add Author" onClose={closeAddAuthorModal}>
                     <div className="flex flex-col gap-6">
-
                         <Input label="Author name" className="w-full" />
                         <button className="btn btn-primary">Add author</button>
                     </div>
@@ -384,10 +405,9 @@ export default function RecipeEditor() {
                 <Modal title="Add recipe book" onClose={closeAddRecipeBookModal}>
                     <div className="flex flex-col gap-6">
                         <Input label="Title" className="w-full" />
-
                         <Select
                             label="Author"
-                            options={authorOptions}
+                            options={authors.map(author => ({ id: author.id, label: author.name }))}
                             value={selectedAuthor}
                             onChange={handleAuthorChange}
                             disabled={true}
@@ -407,8 +427,6 @@ export default function RecipeEditor() {
                     </div>
                 </Modal>
             )}
-
-
         </div>
     );
 }
